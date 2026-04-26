@@ -3,6 +3,7 @@ import { Routes, Route, NavLink, Navigate } from 'react-router-dom'
 import { useAuthStore } from './store/authStore'
 import { cn } from './lib/utils'
 import { LayoutDashboard, ShoppingCart, Package, Users, UsersRound, Settings, LogOut, Loader2 } from 'lucide-react'
+import geckoLogo from './assets/gecko.svg'
 
 // Lazy load features for code splitting
 const DashboardOverview = lazy(() => import('./features/dashboard/DashboardOverview').then(m => ({ default: m.DashboardOverview })));
@@ -41,8 +42,8 @@ function MainLayout() {
       {/* Sidebar */}
       <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0">
         <div className="p-6">
-          <h1 className="text-xl font-bold text-white tracking-tight flex items-center">
-            <span className="bg-emerald-500 w-2 h-2 rounded-full mr-2"></span>
+          <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-3">
+            <img src={geckoLogo} alt="Gecko Logo" className="h-8 w-8" />
             Gecko
           </h1>
           {profile && (

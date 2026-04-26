@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/ui/button';
-import { Loader2, Store, Mail, Lock, User, Building } from 'lucide-react';
+import { Loader2, Mail, Lock, User, Building } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import geckoLogo from '../../assets/gecko.svg';
 
 export function RegisterCompanyView() {
   const [loading, setLoading] = useState(false);
@@ -70,8 +71,8 @@ export function RegisterCompanyView() {
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <div className="h-14 w-14 bg-slate-900 rounded-xl flex items-center justify-center shadow-lg">
-            <Store className="h-8 w-8 text-emerald-400" />
+          <div className="h-20 w-20 bg-white rounded-2xl flex items-center justify-center shadow-xl border border-slate-100">
+            <img src={geckoLogo} alt="Gecko Logo" className="h-12 w-12" />
           </div>
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-slate-900">
