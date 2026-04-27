@@ -35,6 +35,11 @@ export const useCRMStore = create<CRMState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const companyId = useAuthStore.getState().profile?.company_id;
+      if (!companyId) {
+        set({ customers: [], isLoading: false });
+        return;
+      }
+
       const { data, error } = await supabase
         .from('customers')
         .select('*')

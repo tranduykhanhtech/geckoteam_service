@@ -5,8 +5,10 @@ import type { User } from '@supabase/supabase-js';
 export interface Profile {
   id: string;
   company_id: string;
+  store_id?: string;
   full_name: string;
   role: 'admin' | 'manager' | 'staff';
+  companies?: { name: string };
 }
 
 interface AuthState {
@@ -60,11 +62,18 @@ async function fetchProfile(userId: string) {
   try {
     const { data, error } = await supabase
       .from('profiles')
-      .select('*')
+      .select('*, companies(name)')
       .eq('id', userId)
       .single();
 
-    if (error) throw error;
+    if (error) {
+      if (error.code === 'PGRST116') {
+        console.warn("Profile not found for user, might be a new registration.");
+        useAuthStore.setState({ profile: null, isLoading: false });
+        return;
+      }
+      throw error;
+    }
 
     useAuthStore.setState({ profile: data as Profile, isLoading: false });
   } catch (error) {

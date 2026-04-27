@@ -1,9 +1,11 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from './authStore';
+import { useStoreStore } from './storeStore';
 
 export interface InventoryItem {
   id: string;
+  store_id: string;
   name: string;
   unit: string;
   weight_volume_value: number;
@@ -59,10 +61,11 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
   fetchItems: async () => {
     set({ isLoading: true, error: null });
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('inventory_items')
         .select(`
           id, 
+          store_id,
           name, 
           unit,
           weight_volume_value,
@@ -74,13 +77,23 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
             name
           )
         `)
-        .eq('company_id', useAuthStore.getState().profile?.company_id)
-        .order('name');
+        .eq('company_id', useAuthStore.getState().profile?.company_id);
+
+      const { currentStoreId } = useStoreStore.getState();
+      const profileStoreId = useAuthStore.getState().profile?.store_id;
+      const targetStoreId = currentStoreId || profileStoreId;
+
+      if (targetStoreId) {
+        query = query.eq('store_id', targetStoreId);
+      }
+
+      const { data, error } = await query.order('name');
 
       if (error) throw error;
 
       const items: InventoryItem[] = (data || []).map(row => ({
         id: row.id,
+        store_id: row.store_id,
         name: row.name,
         unit: row.unit,
         weight_volume_value: Number(row.weight_volume_value || 1),
@@ -221,9 +234,11 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
           low_stock_threshold: newItem.threshold,
           category_id: newItem.category_id,
           company_id: profile?.company_id,
+          store_id: useStoreStore.getState().currentStoreId || profile?.store_id,
         }])
         .select(`
           id, 
+          store_id,
           name, 
           unit,
           weight_volume_value,
@@ -241,6 +256,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
  
       const item: InventoryItem = {
         id: data.id,
+        store_id: data.store_id,
         name: data.name,
         unit: data.unit,
         weight_volume_value: Number(data.weight_volume_value),

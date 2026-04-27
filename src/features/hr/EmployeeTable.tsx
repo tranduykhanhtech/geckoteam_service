@@ -5,8 +5,9 @@ import { cn } from '../../lib/utils';
 import { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
 
-export function EmployeeTable() {
-  const { employees, updateRole, toggleStatus } = useHRStore();
+export function EmployeeTable({ data }: { data?: EmployeeProfile[] }) {
+  const { employees: storeEmployees, updateRole, toggleStatus } = useHRStore();
+  const employees = data || storeEmployees;
   const { profile: currentUser } = useAuthStore();
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
@@ -35,6 +36,7 @@ export function EmployeeTable() {
           <tr className="border-b border-slate-50">
             <th className="px-6 py-4 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Employee</th>
             <th className="px-6 py-4 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Contact</th>
+            <th className="px-6 py-4 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Branch</th>
             <th className="px-6 py-4 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Role</th>
             <th className="px-6 py-4 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Joined Date</th>
             <th className="px-6 py-4 text-right text-[10px] font-semibold uppercase tracking-wider text-slate-500">Actions</th>
@@ -67,6 +69,11 @@ export function EmployeeTable() {
                     <span className="text-slate-600 font-medium text-xs">{emp.email || '—'}</span>
                     <span className="text-slate-400 text-[11px] mt-0.5">{emp.phone || '—'}</span>
                   </div>
+                </td>
+                <td className="px-6 py-3">
+                  <span className="text-xs font-semibold text-slate-900 bg-slate-50 px-2 py-1 rounded-lg">
+                    {emp.store_name || 'Global / Unassigned'}
+                  </span>
                 </td>
                 <td className="px-6 py-3">
                   {isMe ? (

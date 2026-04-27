@@ -1,13 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useHRStore } from '../../store/hrStore';
+import { useStoreStore } from '../../store/storeStore';
+import { useAuthStore } from '../../store/authStore';
 import { EmployeeTable } from './EmployeeTable';
 import { NewEmployeeModal } from './NewEmployeeModal';
 import { 
   Users, Loader2, ShieldCheck, 
-  UserPlus, Briefcase
+  UserPlus, Briefcase, ChevronDown
 } from 'lucide-react';
 
 export function HRView() {
+  const { stores } = useStoreStore();
+  const { profile } = useAuthStore();
+  const [selectedStore, setSelectedStore] = useState<string>('all');
+
   const { employees, isLoading, fetchEmployees } = useHRStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -15,9 +21,13 @@ export function HRView() {
     fetchEmployees();
   }, [fetchEmployees]);
 
-  const activeCount = employees.filter(e => e.is_active).length;
-  const adminCount = employees.filter(e => (e.role === 'admin' || e.role === 'manager') && e.is_active).length;
-  const staffCount = employees.filter(e => e.role === 'staff' && e.is_active).length;
+  const filteredEmployees = selectedStore === 'all' 
+    ? employees 
+    : employees.filter(e => e.store_id === selectedStore);
+
+  const activeCount = filteredEmployees.filter(e => e.is_active).length;
+  const adminCount = filteredEmployees.filter(e => (e.role === 'admin' || e.role === 'manager') && e.is_active).length;
+  const staffCount = filteredEmployees.filter(e => e.role === 'staff' && e.is_active).length;
 
   if (isLoading && employees.length === 0) {
     return (
@@ -41,6 +51,22 @@ export function HRView() {
         </div>
         
         <div className="flex items-center gap-3">
+          {profile?.role === 'admin' && (
+            <div className="relative group">
+              <select
+                value={selectedStore}
+                onChange={(e) => setSelectedStore(e.target.value)}
+                className="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm font-semibold text-slate-900 focus:ring-1 focus:ring-slate-900 outline-none transition-all shadow-sm hover:border-slate-300"
+              >
+                <option value="all">All Branches</option>
+                {stores.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none group-hover:text-slate-900 transition-colors" />
+            </div>
+          )}
+          
           <button 
             onClick={() => setIsModalOpen(true)}
             className="apple-btn-primary h-11 px-6 text-sm uppercase tracking-wider flex items-center gap-2"
@@ -84,7 +110,7 @@ export function HRView() {
            </div>
         </div>
         <div className="p-6 overflow-x-auto">
-          <EmployeeTable />
+          <EmployeeTable data={filteredEmployees} />
         </div>
       </div>
       

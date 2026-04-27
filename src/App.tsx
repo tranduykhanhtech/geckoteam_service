@@ -1,6 +1,8 @@
 import { useEffect, lazy, Suspense, useState } from 'react'
 import { Routes, Route, NavLink, Navigate } from 'react-router-dom'
 import { useAuthStore } from './store/authStore'
+import { useStoreStore } from './store/storeStore'
+import { useInventoryStore } from './store/inventoryStore'
 import { cn } from './lib/utils'
 import { LayoutDashboard, ShoppingCart, Package, Users, UsersRound, Settings, LogOut, Loader2, ChevronLeft, ChevronRight, Menu, X } from 'lucide-react'
 import geckoLogo from './assets/gecko.svg'
@@ -24,8 +26,24 @@ const PageLoader = () => (
 // Main Layout Component (Only shown when authenticated)
 function MainLayout() {
   const { profile, signOut } = useAuthStore();
+  const { stores, currentStoreId, setCurrentStore, fetchStores } = useStoreStore();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (profile?.company_id) {
+      fetchStores();
+    }
+  }, [profile?.company_id, fetchStores]);
+
+  const { fetchItems } = useInventoryStore();
+
+  // Sync inventory when store changes
+  useEffect(() => {
+    if (currentStoreId) {
+      fetchItems();
+    }
+  }, [currentStoreId, fetchItems]);
 
   const allNavItems = [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard, roles: ['admin', 'manager'] },
@@ -33,7 +51,7 @@ function MainLayout() {
     { name: 'Inventory', path: '/inventory', icon: Package, roles: ['admin', 'manager'] },
     { name: 'HR Management', path: '/hr', icon: Users, roles: ['admin'] },
     { name: 'CRM', path: '/crm', icon: UsersRound, roles: ['admin', 'manager'] },
-    { name: 'Operations', path: '/operations', icon: Settings, roles: ['admin'] },
+    { name: 'Operations', path: '/operations', icon: Settings, roles: ['admin', 'manager'] },
   ];
 
   const currentRole = profile?.role || 'staff';
@@ -59,14 +77,11 @@ function MainLayout() {
       <aside
         className={cn(
           "bg-white border-r border-slate-100 text-slate-500 flex flex-col shrink-0 transition-all duration-500 ease-in-out fixed md:relative z-[60] h-full shadow-sm md:shadow-none",
-          // Desktop behavior
           "md:translate-x-0",
           isCollapsed ? "md:w-24" : "md:w-72",
-          // Mobile behavior
           isMobileMenuOpen ? "translate-x-0 w-72" : "-translate-x-full w-72"
         )}
       >
-        {/* Desktop Toggle Button */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="hidden md:flex absolute -right-3 top-10 h-6 w-6 bg-white border border-slate-200 text-slate-400 rounded-full items-center justify-center shadow-sm hover:text-slate-900 transition-all z-50"
@@ -83,12 +98,27 @@ function MainLayout() {
           </div>
 
           {profile && (
-            <div className={cn(
-              "mt-8 p-4 bg-slate-50 rounded-2xl border border-slate-100",
-              isCollapsed && "md:hidden"
-            )}>
-              <p className="text-sm font-semibold text-slate-900 truncate">{profile.full_name}</p>
-              <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-0.5">{profile.role}</p>
+            <div className={cn("mt-8 space-y-4", isCollapsed && "md:hidden")}>
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <p className="text-sm font-semibold text-slate-900 truncate">{profile.full_name}</p>
+                <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-0.5">{profile.role}</p>
+              </div>
+
+              {stores.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Current Branch</p>
+                  <select
+                    value={currentStoreId || ''}
+                    onChange={(e) => setCurrentStore(e.target.value)}
+                    disabled={profile.role !== 'admin' && profile.role !== 'manager'}
+                    className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 shadow-sm focus:ring-1 focus:ring-slate-900 outline-none appearance-none disabled:opacity-75 disabled:bg-slate-50"
+                  >
+                    {stores.map(s => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -131,7 +161,6 @@ function MainLayout() {
         </div>
       </aside>
 
-      {/* Mobile Backdrop */}
       {isMobileMenuOpen && (
         <div
           className="fixed inset-0 bg-slate-900/20 z-[55] md:hidden backdrop-blur-sm animate-in fade-in duration-500"
@@ -139,31 +168,16 @@ function MainLayout() {
         />
       )}
 
-      {/* Main Content Area */}
       <main className="flex-1 min-w-0 overflow-hidden relative flex flex-col">
         <Suspense fallback={<PageLoader />}>
           <Routes>
-            {allowedNavItems.some(i => i.path === '/') && (
-              <Route path="/" element={<DashboardOverview />} />
-            )}
-            {allowedNavItems.some(i => i.path === '/pos') && (
-              <Route path="/pos" element={<POSView />} />
-            )}
-            {allowedNavItems.some(i => i.path === '/inventory') && (
-              <Route path="/inventory" element={<InventoryView />} />
-            )}
-            {allowedNavItems.some(i => i.path === '/hr') && (
-              <Route path="/hr" element={<HRView />} />
-            )}
-            {allowedNavItems.some(i => i.path === '/crm') && (
-              <Route path="/crm" element={<CRMView />} />
-            )}
-            {allowedNavItems.some(i => i.path === '/operations') && (
-              <Route path="/operations" element={<OperationsView />} />
-            )}
-
-            {/* Fallback route */}
-            <Route path="*" element={<Navigate to={allowedNavItems[0]?.path || '/'} replace />} />
+            <Route path="/" element={<DashboardOverview />} />
+            <Route path="/pos" element={<POSView />} />
+            <Route path="/inventory" element={<InventoryView />} />
+            <Route path="/hr" element={<HRView />} />
+            <Route path="/crm" element={<CRMView />} />
+            <Route path="/operations" element={<OperationsView />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
       </main>
@@ -172,7 +186,7 @@ function MainLayout() {
 }
 
 function App() {
-  const { isAuthenticated, isLoading, initialize } = useAuthStore();
+  const { isAuthenticated, isLoading, initialize, profile } = useAuthStore();
 
   useEffect(() => {
     initialize();
@@ -187,10 +201,13 @@ function App() {
     );
   }
 
+  // If authenticated but no profile after loading, they are in a broken state
+  const isBrokenState = isAuthenticated && !profile;
+
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
-        {!isAuthenticated ? (
+        {(!isAuthenticated || isBrokenState) ? (
           <>
             <Route path="/login" element={<LoginView />} />
             <Route path="/register" element={<RegisterCompanyView />} />

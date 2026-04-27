@@ -46,7 +46,7 @@ export interface POSState {
   removeFromCart: (cartItemId: string) => void;
   updateQuantity: (cartItemId: string, delta: number) => void;
   clearCart: () => void;
-  checkout: () => Promise<void>;
+  checkout: () => Promise<string>;
   voidOrder: (orderId: string) => Promise<void>;
 
   // Computed
@@ -201,13 +201,20 @@ export const usePOSStore = create<POSState>((set, get) => ({
 
   checkout: async () => {
     const { cart, getTotal, getSubtotal, getLoyaltyDiscount, selectedCustomer, pointsToRedeem, loyaltyConfig } = get();
-    if (cart.length === 0) return;
+    if (cart.length === 0) throw new Error("Cart is empty");
 
     set({ isLoading: true, error: null });
     try {
       const profile = useAuthStore.getState().profile;
       if (!profile) throw new Error("User not authenticated or missing profile");
 
+      const generateOrderCode = () => {
+        const datePart = new Date().toISOString().slice(2, 10).replace(/-/g, ''); // YYMMDD
+        const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase(); // 4 chars
+        return `GK-${datePart}-${randomPart}`;
+      };
+
+      const orderCode = generateOrderCode();
       const orderId = crypto.randomUUID();
       const totalAmount = getTotal();
       const subtotal = getSubtotal();
@@ -218,6 +225,7 @@ export const usePOSStore = create<POSState>((set, get) => ({
         .from('orders')
         .insert([{
           id: orderId,
+          order_code: orderCode,
           company_id: profile.company_id,
           staff_id: profile.id,
           customer_id: selectedCustomer?.id || null,
@@ -311,6 +319,7 @@ export const usePOSStore = create<POSState>((set, get) => ({
 
       // 4. Clear state on success
       set({ cart: [], selectedCustomer: null, pointsToRedeem: 0 });
+      return orderCode;
 
     } catch (err: any) {
       set({ error: err.message });
@@ -334,15 +343,41 @@ export const usePOSStore = create<POSState>((set, get) => ({
     return Math.max(0, get().getSubtotal() - get().getLoyaltyDiscount());
   },
 
-  voidOrder: async (orderId: string) => {
+  voidOrder: async (orderIdentifier: string) => {
     try {
-      const { error } = await supabase
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(orderIdentifier);
+      
+      let query = supabase.from('orders').select('id, order_code');
+      
+      if (isUuid) {
+        query = query.eq('id', orderIdentifier);
+      } else {
+        query = query.eq('order_code', orderIdentifier);
+      }
+
+      const { data: order, error: fetchError } = await query.single();
+
+      if (fetchError || !order) throw new Error("Order not found. Check the code or ID.");
+
+      // First delete order_items (though cascade should handle it, explicit is safer)
+      const { error: itemsDeleteError } = await supabase
+        .from('order_items')
+        .delete()
+        .eq('order_id', order.id);
+
+      if (itemsDeleteError) throw itemsDeleteError;
+
+      // Then delete the order itself
+      const { error: orderDeleteError } = await supabase
         .from('orders')
-        .update({ status: 'cancelled' })
-        .eq('id', orderId);
-      if (error) throw error;
+        .delete()
+        .eq('id', order.id);
+
+      if (orderDeleteError) throw orderDeleteError;
+
+      console.log(`Order ${order.order_code} and its items have been permanently deleted.`);
     } catch (err: any) {
-      console.error('Failed to void order:', err.message);
+      console.error('Failed to permanently delete order:', err.message);
       throw err;
     }
   },

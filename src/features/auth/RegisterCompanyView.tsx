@@ -23,42 +23,44 @@ export function RegisterCompanyView() {
     setSuccess(null);
 
     try {
-      // 1. Sign up the user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      // Get the function URL from environment
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const functionUrl = `${supabaseUrl}/functions/v1/register-company`;
+
+      // Call the Edge Function to handle registration server-side
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          fullName,
+          companyName,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Registration failed');
+      }
+
+      // Success - sign in the new user
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (authError) throw authError;
+      if (signInError) throw signInError;
 
-      if (!authData.user) {
-        throw new Error("Failed to create user account.");
-      }
-
-      // 2. Generate UUID for the new company
-      const companyId = crypto.randomUUID();
-
-      // 3. Create the Company (Do not use .select() here because the SELECT RLS policy 
-      // will fail until the profile is created)
-      const { error: companyError } = await supabase
-        .from('companies')
-        .insert([{ id: companyId, name: companyName }]);
-
-      if (companyError) throw companyError;
-
-      // 4. Create the Admin Profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert([{ 
-          id: authData.user.id, 
-          company_id: companyId, 
-          full_name: fullName, 
-          role: 'admin' 
-        }]);
-
-      if (profileError) throw profileError;
-
-      setSuccess("Your company has been successfully registered! You are now logged in.");
+      setSuccess("Your company has been successfully registered! Redirecting...");
+      
+      // Navigate to home after a short delay
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1500);
 
     } catch (err: any) {
       setError(err.message || "An error occurred during registration");
@@ -167,8 +169,8 @@ export function RegisterCompanyView() {
             </div>
 
             <div>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="w-full bg-slate-900 hover:bg-slate-800 text-white py-6 rounded-xl text-sm font-semibold transition-all active:scale-[0.98]"
                 disabled={loading}
               >

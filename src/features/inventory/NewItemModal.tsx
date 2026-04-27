@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useInventoryStore } from '../../store/inventoryStore';
 import type { InventoryItem } from '../../store/inventoryStore';
 import { useAuthStore } from '../../store/authStore';
+import { useStoreStore } from '../../store/storeStore';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/ui/button';
 import { X, Loader2, Plus, CheckCircle2, AlertTriangle, Trash2 } from 'lucide-react';
@@ -104,6 +105,7 @@ export function NewItemModal({ isOpen, onClose, editItem }: NewItemModalProps) {
         weight_volume_unit: weightUnit,
         quantity: parseFloat(quantity) || 0,
         threshold: parseFloat(threshold) || 0,
+        store_id: editItem?.store_id || useStoreStore.getState().currentStoreId || profile?.store_id || '',
       };
 
       if (editItem) {

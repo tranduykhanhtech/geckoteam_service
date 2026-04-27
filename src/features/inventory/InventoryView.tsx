@@ -3,17 +3,19 @@ import { InventoryTable } from './InventoryTable';
 import { 
   FileDown, Plus, History, Loader2, Package, 
   AlertTriangle, XCircle, 
-  ChevronRight, Layers
+  ChevronRight, Layers, Truck
 } from 'lucide-react';
 import { useInventoryStore } from '../../store/inventoryStore';
 import { NewItemModal } from './NewItemModal';
 import { AdjustmentHistoryModal } from './AdjustmentHistoryModal';
+import { TransferView } from './TransferView';
 
 export function InventoryView() {
   const { items, isLoading, fetchItems, fetchCategories } = useInventoryStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
+  const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
 
   useEffect(() => { 
@@ -142,6 +144,14 @@ export function InventoryView() {
           </div>
 
           <button 
+            className="apple-btn-secondary h-11 px-6 text-sm flex items-center gap-2"
+            onClick={() => setIsTransferOpen(true)}
+          >
+            <Truck className="h-4 w-4" />
+            Transfers
+          </button>
+
+          <button 
             onClick={() => setIsModalOpen(true)}
             className="apple-btn-primary h-11 px-6 text-sm uppercase tracking-wider flex items-center gap-2"
           >
@@ -194,6 +204,7 @@ export function InventoryView() {
         editItem={selectedItem} 
       />
       <AdjustmentHistoryModal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} />
+      <TransferView isOpen={isTransferOpen} onClose={() => setIsTransferOpen(false)} />
     </div>
   );
 }

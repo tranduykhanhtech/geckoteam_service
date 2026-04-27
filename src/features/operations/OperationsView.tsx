@@ -4,45 +4,40 @@ import { useAuthStore } from '../../store/authStore';
 import { AddProductForm } from './AddProductForm';
 import { VoidBillForm } from './VoidBillForm';
 import { StoreSettings } from './StoreSettings';
+import { AccountSecurity } from './AccountSecurity';
 import {
   Ban, PackagePlus, LayoutGrid,
-  ShieldAlert, Sliders, Activity
+  Sliders, Activity, Star, Lock
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 import { ProductManagementTable } from './ProductManagementTable';
+import { BranchManagement } from './BranchManagement';
+import { Store } from 'lucide-react';
 
-type OperationTab = 'menu-management' | 'order-management' | 'store-settings';
+type OperationTab = 'menu-management' | 'order-management' | 'store-settings' | 'branch-management' | 'account-security';
 
 export function OperationsView() {
   const { profile } = useAuthStore();
   const { fetchProductsAndCategories, categories, voidOrder } = usePOSStore();
-  const [activeTab, setActiveTab] = useState<OperationTab>('menu-management');
+  const [activeTab, setActiveTab] = useState<OperationTab>('account-security');
 
   useEffect(() => {
-    // When managing menu, fetch all products including unavailable ones
-    fetchProductsAndCategories(activeTab === 'menu-management');
+    if (activeTab === 'menu-management') {
+      fetchProductsAndCategories(true);
+    }
   }, [fetchProductsAndCategories, activeTab]);
 
-  // Only allow admin and manager roles
-  if (profile?.role !== 'admin' && profile?.role !== 'manager') {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center p-8 bg-slate-50/50">
-        <div className="h-20 w-20 rounded-full bg-rose-50 flex items-center justify-center mb-6">
-          <ShieldAlert className="h-10 w-10 text-rose-500" />
-        </div>
-        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Access Restricted</h2>
-        <p className="text-slate-500 text-center max-w-md mt-2 font-medium">
-          Command operations are reserved for privileged accounts. Please contact your administrator.
-        </p>
-      </div>
-    );
-  }
-
   const tabs = [
-    { id: 'menu-management', label: 'Menu Catalog', icon: LayoutGrid },
-    { id: 'order-management', label: 'Order Overrides', icon: Activity },
-    ...(profile.role === 'admin' ? [{ id: 'store-settings', label: 'Global Config', icon: Sliders }] : []),
+    { id: 'account-security', label: 'Security', icon: Lock },
+    ...(profile?.role === 'admin' || profile?.role === 'manager' ? [
+      { id: 'menu-management', label: 'Menu Catalog', icon: LayoutGrid },
+      { id: 'order-management', label: 'Order Overrides', icon: Activity },
+    ] : []),
+    ...(profile?.role === 'admin' ? [
+      { id: 'branch-management', label: 'Branches', icon: Store },
+      { id: 'store-settings', label: 'System & Loyalty', icon: Star }
+    ] : []),
   ];
 
   return (
@@ -81,17 +76,19 @@ export function OperationsView() {
         <div className="max-w-4xl mx-auto space-y-8">
           {activeTab === 'menu-management' && (
             <>
-              <div className="apple-card overflow-hidden bg-white">
-                <div className="p-6 border-b border-slate-50">
-                  <h3 className="font-semibold text-slate-900 flex items-center gap-2 text-lg tracking-tight">
-                    <PackagePlus className="h-5 w-5 text-slate-900" />
-                    New Product
-                  </h3>
+              {profile?.role === 'admin' && (
+                <div className="apple-card overflow-hidden bg-white">
+                  <div className="p-6 border-b border-slate-50">
+                    <h3 className="font-semibold text-slate-900 flex items-center gap-2 text-lg tracking-tight">
+                      <PackagePlus className="h-5 w-5 text-slate-900" />
+                      New Product
+                    </h3>
+                  </div>
+                  <div className="p-6">
+                    <AddProductForm categories={categories} onSuccess={() => fetchProductsAndCategories(true)} />
+                  </div>
                 </div>
-                <div className="p-6">
-                  <AddProductForm categories={categories} onSuccess={() => fetchProductsAndCategories(true)} />
-                </div>
-              </div>
+              )}
 
               <div className="apple-card overflow-hidden bg-white">
                 <div className="p-6 border-b border-slate-50">
@@ -131,6 +128,34 @@ export function OperationsView() {
               </div>
               <div className="p-6">
                 <StoreSettings />
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'branch-management' && (
+            <div className="apple-card overflow-hidden bg-white">
+              <div className="p-6 border-b border-slate-50">
+                <h3 className="font-semibold text-slate-900 flex items-center gap-2 text-lg tracking-tight">
+                  <Store className="h-5 w-5 text-slate-900" />
+                  Branch Network
+                </h3>
+              </div>
+              <div className="p-6">
+                <BranchManagement />
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'account-security' && (
+            <div className="apple-card overflow-hidden bg-white">
+              <div className="p-6 border-b border-slate-50">
+                <h3 className="font-semibold text-slate-900 flex items-center gap-2 text-lg tracking-tight">
+                  <Lock className="h-5 w-5 text-slate-900" />
+                  Account Security
+                </h3>
+              </div>
+              <div className="p-6">
+                <AccountSecurity />
               </div>
             </div>
           )}

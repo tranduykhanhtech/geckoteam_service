@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
 import { useAuthStore } from './authStore';
 
 export interface EmployeeProfile {
@@ -10,6 +9,8 @@ export interface EmployeeProfile {
   phone: string | null;
   role: 'admin' | 'manager' | 'staff';
   is_active: boolean;
+  store_id: string | null;
+  store_name?: string | null;
   created_at: string;
 }
 
@@ -31,23 +32,30 @@ export const useHRStore = create<HRState>((set) => ({
   fetchEmployees: async () => {
     set({ isLoading: true, error: null });
     try {
-      const companyId = useAuthStore.getState().profile?.company_id;
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, staff_code, full_name, email, role, is_active, created_at')
-        .eq('company_id', companyId)
-        .order('created_at', { ascending: false });
+      const session = useAuthStore.getState().session;
+      if (!session?.access_token) {
+        throw new Error("Not authenticated");
+      }
 
-      if (error) throw error;
-      
-      // Map missing columns to defaults safely in case the DB doesn't have them yet
-      const mapped = (data || []).map(row => ({
-        ...row,
-        email: row.email ?? null,
-        is_active: row.is_active ?? true,
-      })) as EmployeeProfile[];
+      // Use Edge Function instead of direct query
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const functionUrl = `${supabaseUrl}/functions/v1/get-employees`;
 
-      set({ employees: mapped });
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch employees');
+      }
+
+      set({ employees: data.employees || [] });
     } catch (err: any) {
       set({ error: err.message });
     } finally {
@@ -55,16 +63,35 @@ export const useHRStore = create<HRState>((set) => ({
     }
   },
 
-  updateRole: async (id, newRole) => {
+  updateRole: async (id: string, newRole: 'admin' | 'manager' | 'staff') => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role: newRole })
-        .eq('id', id);
+      const session = useAuthStore.getState().session;
+      if (!session?.access_token) {
+        throw new Error("Not authenticated");
+      }
 
-      if (error) throw error;
+      // Use Edge Function instead of direct update
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const functionUrl = `${supabaseUrl}/functions/v1/update-employee-role`;
+
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ employeeId: id, newRole }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update role');
+      }
+
+      // Update local state
       set(state => ({
-        employees: state.employees.map(emp => 
+        employees: state.employees.map(emp =>
           emp.id === id ? { ...emp, role: newRole } : emp
         )
       }));
@@ -74,16 +101,35 @@ export const useHRStore = create<HRState>((set) => ({
     }
   },
 
-  toggleStatus: async (id, isActive) => {
+  toggleStatus: async (id: string, isActive: boolean) => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ is_active: isActive })
-        .eq('id', id);
+      const session = useAuthStore.getState().session;
+      if (!session?.access_token) {
+        throw new Error("Not authenticated");
+      }
 
-      if (error) throw error;
+      // Use Edge Function instead of direct update
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const functionUrl = `${supabaseUrl}/functions/v1/toggle-employee-status`;
+
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ employeeId: id, isActive }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update employee status');
+      }
+
+      // Update local state
       set(state => ({
-        employees: state.employees.map(emp => 
+        employees: state.employees.map(emp =>
           emp.id === id ? { ...emp, is_active: isActive } : emp
         )
       }));

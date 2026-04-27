@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Loader2, UserPlus, KeyRound, Mail, AlertTriangle, Phone, User } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { useAuthStore } from '../../store/authStore';
 import { useHRStore } from '../../store/hrStore';
+import { useStoreStore } from '../../store/storeStore';
 
 interface NewEmployeeModalProps {
   isOpen: boolean;
@@ -12,6 +13,13 @@ interface NewEmployeeModalProps {
 export function NewEmployeeModal({ isOpen, onClose }: NewEmployeeModalProps) {
   const { session } = useAuthStore();
   const { fetchEmployees } = useHRStore();
+  const { stores, fetchStores } = useStoreStore();
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchStores();
+    }
+  }, [isOpen, fetchStores]);
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,6 +30,7 @@ export function NewEmployeeModal({ isOpen, onClose }: NewEmployeeModalProps) {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
+  const [storeId, setStoreId] = useState('');
 
   if (!isOpen) return null;
 
@@ -43,7 +52,7 @@ export function NewEmployeeModal({ isOpen, onClose }: NewEmployeeModalProps) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ email, password, fullName, phone }),
+        body: JSON.stringify({ email, password, fullName, phone, storeId }),
       });
 
       const data = await response.json();
@@ -72,6 +81,7 @@ export function NewEmployeeModal({ isOpen, onClose }: NewEmployeeModalProps) {
     setPassword('');
     setFullName('');
     setPhone('');
+    setStoreId('');
     setError(null);
     setSuccess(false);
     onClose();
@@ -157,6 +167,22 @@ export function NewEmployeeModal({ isOpen, onClose }: NewEmployeeModalProps) {
                 disabled={loading || success}
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Assigned Branch</label>
+            <select
+              required
+              className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+              value={storeId}
+              onChange={(e) => setStoreId(e.target.value)}
+              disabled={loading || success}
+            >
+              <option value="">Select a branch...</option>
+              {stores.map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
           </div>
 
           <div>

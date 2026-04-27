@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { usePOSStore } from '../../store/posStore';
 import { useCRMStore } from '../../store/crmStore';
+import { useStoreStore } from '../../store/storeStore';
+import { useAuthStore } from '../../store/authStore';
 import { 
   Trash2, Plus, Minus, ShoppingCart, CheckCircle2, 
   Loader2, Banknote, CreditCard, QrCode, User, 
@@ -21,6 +23,8 @@ export function Cart() {
   
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
+  const [lastOrderCode, setLastOrderCode] = useState<string>('');
+  const [lastOrderItems, setLastOrderItems] = useState<any[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Cash');
   
   const [customerSearch, setCustomerSearch] = useState('');
@@ -37,9 +41,13 @@ export function Cart() {
   const change = cashReceived ? parseFloat(cashReceived) - total : 0;
 
   const handleCheckout = async () => {
+    if (cart.length === 0) return;
     setIsCheckingOut(true);
     try {
-      await checkout();
+      const itemsCopy = [...cart];
+      const code = await checkout();
+      setLastOrderItems(itemsCopy);
+      setLastOrderCode(code);
       setCheckoutSuccess(true);
     } catch (err: any) {
       console.error("Checkout error:", err);
@@ -64,44 +72,122 @@ export function Cart() {
   };
 
   if (checkoutSuccess) {
+    const profile = useAuthStore.getState().profile;
+    const { stores, currentStoreId } = useStoreStore.getState();
+    const currentStore = stores.find(s => s.id === currentStoreId);
+    const orderTime = new Date().toLocaleString('en-US', { 
+      year: 'numeric', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+
     return (
-      <div className="w-full h-full bg-white flex flex-col items-center justify-center p-8 text-center animate-in zoom-in duration-500">
-        <div className="mb-8">
-           <div className="h-20 w-20 bg-slate-900 rounded-[28px] flex items-center justify-center shadow-2xl">
-              <CheckCircle2 className="h-10 w-10 text-white" />
+      <div className="w-full h-full bg-white flex flex-col items-center justify-center p-8 text-center animate-in zoom-in duration-500 overflow-y-auto">
+        <div className="mb-8 relative">
+           <div className="h-24 w-24 bg-slate-900 rounded-[32px] flex items-center justify-center shadow-2xl animate-bounce">
+              <CheckCircle2 className="h-12 w-12 text-white" />
            </div>
+           <div className="absolute -top-4 -right-4 h-8 w-8 bg-emerald-50/50 rounded-full blur-xl" />
         </div>
         
-        <h2 className="text-2xl font-semibold text-slate-900 mb-2 tracking-tight">Order Confirmed</h2>
-        <p className="text-slate-400 text-sm font-medium mb-10">Transaction completed successfully.</p>
+        <h2 className="text-3xl font-bold text-slate-900 mb-2 tracking-tight">Success!</h2>
+        <p className="text-slate-400 text-sm font-medium mb-10">Order processed and finalized.</p>
         
-        <div className="bg-slate-50 w-full rounded-3xl p-8 mb-10 border border-slate-100 relative">
-          <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white px-4 py-1 rounded-full border border-slate-100 text-[10px] font-semibold text-slate-400 uppercase tracking-widest">
-            Receipt Summary
+        {/* Realistic Detailed Digital Receipt */}
+        <div className="bg-white w-full rounded-[40px] p-8 mb-10 border border-slate-100 shadow-2xl shadow-slate-200/50 relative overflow-hidden">
+          {/* Header Section */}
+          <div className="flex flex-col items-center pb-8 border-b border-slate-50 relative">
+             <div className="h-12 w-12 bg-slate-50 rounded-2xl flex items-center justify-center mb-4">
+                <Receipt className="h-6 w-6 text-slate-900" />
+             </div>
+             <h3 className="text-xl font-bold text-slate-900 tracking-tight">{profile?.companies?.name || 'Gecko POS'}</h3>
+             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">{currentStore?.name || 'Main Branch'}</p>
+             
+             {/* Receipt Top Pattern */}
+             <div className="absolute top-0 left-0 right-0 h-1 flex justify-center gap-1.5 opacity-10 -mt-8">
+                {Array.from({length: 12}).map((_, i) => (
+                  <div key={i} className="h-3 w-3 bg-slate-400 rounded-full -mt-1.5" />
+                ))}
+             </div>
           </div>
-          <div className="space-y-6">
-             <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-400 font-semibold uppercase tracking-wider">Method</span>
-                <span className="bg-slate-900 text-white px-3 py-1 rounded-lg font-semibold uppercase tracking-wider text-[10px]">{paymentMethod}</span>
+
+          <div className="py-8 space-y-6">
+             {/* Order Code Section */}
+             <div className="flex flex-col items-center bg-slate-50 rounded-[24px] p-6 border border-slate-100">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-2">Order Code</p>
+                <p className="text-2xl font-mono font-bold text-slate-900 tracking-wider">
+                  {lastOrderCode}
+                </p>
              </div>
-             <div className="flex justify-between items-center py-6 border-y border-slate-200/50">
-                <span className="text-slate-400 font-semibold uppercase tracking-wider text-xs">Total Bill</span>
-                <span className="text-3xl font-semibold text-slate-900 tracking-tight">${total.toFixed(2)}</span>
+
+             {/* Items List Section */}
+             <div className="py-6 border-y border-dashed border-slate-200 space-y-4">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-left">Purchased Items</p>
+                <div className="space-y-3">
+                   {lastOrderItems.map((item, idx) => (
+                     <div key={idx} className="flex justify-between items-start text-[11px]">
+                        <div className="flex-1 text-left pr-4">
+                           <p className="font-bold text-slate-900">{item.name}</p>
+                           <p className="text-slate-400 font-medium">{item.quantity} x ${Number(item.price).toFixed(2)}</p>
+                        </div>
+                        <span className="font-bold text-slate-900">${(item.price * item.quantity).toFixed(2)}</span>
+                     </div>
+                   ))}
+                </div>
              </div>
-             {paymentMethod === 'Cash' && (
-               <div className="flex justify-between items-center">
-                  <span className="text-slate-400 font-semibold uppercase tracking-wider text-xs">Change Back</span>
-                  <span className="text-xl font-semibold text-slate-900 tracking-tight">${change.toFixed(2)}</span>
-               </div>
-             )}
+
+             {/* Meta Data Table */}
+             <div className="space-y-4 pt-2">
+                <div className="flex justify-between items-center text-[10px]">
+                   <span className="font-bold text-slate-400 uppercase tracking-widest text-left">Cashier</span>
+                   <span className="font-bold text-slate-900">{profile?.full_name || 'System'}</span>
+                </div>
+                <div className="flex justify-between items-center text-[10px]">
+                   <span className="font-bold text-slate-400 uppercase tracking-widest text-left">Timestamp</span>
+                   <span className="font-bold text-slate-900">{orderTime}</span>
+                </div>
+                <div className="flex justify-between items-center text-[10px]">
+                   <span className="font-bold text-slate-400 uppercase tracking-widest text-left">Payment</span>
+                   <div className="flex items-center gap-2">
+                      <span className="font-bold text-slate-900">{paymentMethod}</span>
+                      <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                   </div>
+                </div>
+
+                <div className="pt-6 mt-6 border-t border-slate-50">
+                   <div className="flex justify-between items-center mb-1">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-left">Total Paid</span>
+                      <span className="text-4xl font-black text-slate-900 tracking-tighter">${total.toFixed(2)}</span>
+                   </div>
+                   {paymentMethod === 'Cash' && (
+                     <div className="flex justify-between items-center text-xs">
+                        <span className="font-bold text-slate-400 uppercase tracking-widest text-left">Change</span>
+                        <span className="font-bold text-slate-900">${change.toFixed(2)}</span>
+                     </div>
+                   )}
+                </div>
+             </div>
+          </div>
+
+          {/* Bottom Branding */}
+          <div className="pt-4 flex flex-col items-center opacity-30">
+             <div className="h-px w-12 bg-slate-200 mb-4" />
+             <p className="text-[8px] font-black uppercase tracking-[0.4em] text-slate-400 italic">Powering your growth • gecko.io.vn</p>
+          </div>
+
+          {/* Bottom Zig-zag Edge */}
+          <div className="absolute bottom-0 left-0 right-0 h-2 opacity-[0.03] flex">
+            {Array.from({length: 20}).map((_, i) => (
+              <div key={i} className="w-4 h-4 bg-slate-900 rotate-45 -mb-2" />
+            ))}
           </div>
         </div>
 
         <button 
-          className="w-full bg-slate-900 hover:bg-slate-800 text-white h-14 rounded-2xl font-semibold text-xs uppercase tracking-[0.2em] transition-all active:scale-[0.98]"
+          className="w-full bg-slate-900 hover:bg-slate-800 text-white h-16 rounded-[28px] font-bold text-xs uppercase tracking-[0.4em] transition-all active:scale-[0.98] shadow-2xl shadow-slate-900/20 flex items-center justify-center gap-3"
           onClick={handleNewOrder}
         >
-          Start New Order
+          <Plus className="h-4 w-4" />
+          Next Order
         </button>
       </div>
     );

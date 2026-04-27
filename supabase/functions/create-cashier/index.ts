@@ -49,11 +49,27 @@ Deno.serve(async (req: Request) => {
     }
 
     // 2. Parse request body
-    const { email, password, fullName } = await req.json();
+    const { email, password, fullName, phone, storeId } = await req.json();
     if (!email || !password || !fullName) {
       return new Response(JSON.stringify({ error: "Missing required fields: email, password, fullName" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Validate storeId if provided
+    if (storeId && storeId.trim() !== '') {
+      const { data: storeData, error: storeError } = await supabaseClient
+        .from("stores")
+        .select("id")
+        .eq("id", storeId)
+        .eq("company_id", profile.company_id)
+        .single();
+
+      if (storeError || !storeData) {
+        return new Response(JSON.stringify({ error: "Invalid store ID or store does not belong to your company" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // 3. Use service_role client to create auth user (does NOT affect caller's session)
@@ -74,15 +90,17 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // 4. Create profile linked to admin's company
+    // 4. Create profile linked to admin's company and store
     const { data: newProfile, error: insertError } = await supabaseAdmin
       .from("profiles")
       .insert([{
         id: newUser.user.id,
         company_id: profile.company_id,
+        store_id: storeId && storeId.trim() !== '' ? storeId : null, // Ensure storeId is valid
         full_name: fullName,
         role: "staff",
         email: email,
+        phone: phone || null,
         is_active: true,
       }])
       .select("staff_code")
