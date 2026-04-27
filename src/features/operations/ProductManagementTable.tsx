@@ -1,14 +1,12 @@
 import { useState } from 'react';
 import { usePOSStore, type Product } from '../../store/posStore';
 import { 
-  Search, Edit2, Trash2, Tag, 
-  MoreVertical, Eye, EyeOff, Package,
-  ExternalLink, Filter, Check, X
+  Search, Edit2, Eye, EyeOff, Package, Loader2
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 export function ProductManagementTable() {
-  const { products, categories, updateProduct, deleteProduct, isLoading } = usePOSStore();
+  const { products, categories, updateProduct, isLoading } = usePOSStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -37,15 +35,6 @@ export function ProductManagementTable() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
-      try {
-        await deleteProduct(id);
-      } catch (err) {
-        alert('Failed to delete product');
-      }
-    }
-  };
 
   const toggleAvailability = async (p: Product) => {
     try {
@@ -109,7 +98,7 @@ export function ProductManagementTable() {
 
       {/* Table Area */}
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse min-w-[600px]">
+        <table className="w-full text-left border-collapse min-w-[800px]">
           <thead>
             <tr className="border-b border-slate-50">
               <th className="px-6 py-4 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Product</th>
@@ -122,7 +111,7 @@ export function ProductManagementTable() {
           <tbody className="divide-y divide-slate-50">
             {filteredProducts.map((p) => (
               <tr key={p.id} className="group hover:bg-slate-50/50 transition-colors">
-                <td className="px-6 py-5">
+                <td className="px-6 py-3">
                   <div className="flex items-center">
                     <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-white border border-slate-100 overflow-hidden mr-4 shadow-sm flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">
                       {p.image_url ? (
@@ -150,12 +139,12 @@ export function ProductManagementTable() {
                     )}
                   </div>
                 </td>
-                <td className="px-6 py-5 hidden md:table-cell">
+                <td className="px-6 py-3 hidden md:table-cell">
                   <span className="text-[10px] font-semibold px-2.5 py-1 bg-slate-50 rounded text-slate-500 uppercase tracking-wide">
                     {p.category_name}
                   </span>
                 </td>
-                <td className="px-6 py-5">
+                <td className="px-6 py-3">
                    {editingId === p.id ? (
                       <div className="relative w-24">
                         <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">$</span>
@@ -170,7 +159,7 @@ export function ProductManagementTable() {
                       <span className="text-sm font-semibold text-slate-900 tracking-tight">${p.price.toLocaleString()}</span>
                    )}
                 </td>
-                <td className="px-6 py-5">
+                <td className="px-6 py-3">
                   <button 
                     onClick={() => toggleAvailability(p)}
                     className={cn(
@@ -184,8 +173,8 @@ export function ProductManagementTable() {
                     <span className="hidden sm:inline">{p.is_available ? 'Live' : 'Hidden'}</span>
                   </button>
                 </td>
-                <td className="px-6 py-5 text-right">
-                  <div className="flex items-center justify-end gap-2">
+                <td className="px-6 py-3 text-right">
+                  <div className="flex items-center justify-end gap-2 transition-all">
                     {editingId === p.id ? (
                       <>
                         <button 
@@ -202,7 +191,7 @@ export function ProductManagementTable() {
                         </button>
                       </>
                     ) : (
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                      <div className="flex items-center justify-end gap-2 transition-all">
                         <button 
                           onClick={() => handleStartEdit(p)}
                           className="h-8 w-8 flex items-center justify-center rounded-lg bg-white border border-slate-100 text-slate-400 hover:text-slate-900 shadow-sm transition-all"

@@ -1,7 +1,5 @@
-import { Mail, Phone, Edit2, User, MoreHorizontal, History, Star, Heart, TrendingUp, Calendar } from 'lucide-react';
+import { Edit2, User, Star, TrendingUp } from 'lucide-react';
 import type { Customer } from '../../store/crmStore';
-import { cn } from '../../lib/utils';
-import { Badge } from '../../components/ui/badge';
 
 interface CustomerTableProps {
   customers: Customer[];
@@ -31,8 +29,8 @@ export function CustomerTable({ customers, isLoading, onEditCustomer }: Customer
   }
 
   return (
-    <div className="overflow-hidden">
-      <table className="w-full text-sm text-left border-collapse">
+    <div className="w-full overflow-x-auto">
+      <table className="w-full text-sm text-left border-collapse min-w-[800px]">
         <thead>
           <tr className="border-b border-slate-50">
             <th className="px-6 py-4 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Member</th>
@@ -45,7 +43,7 @@ export function CustomerTable({ customers, isLoading, onEditCustomer }: Customer
         <tbody className="divide-y divide-slate-50">
           {customers.map((customer) => (
             <tr key={customer.id} className="group hover:bg-slate-50/50 transition-colors">
-              <td className="px-6 py-5">
+              <td className="px-6 py-3">
                 <div className="flex items-center">
                   <div className="h-10 w-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center mr-4 text-slate-400 group-hover:text-slate-900 transition-all">
                     <User className="h-5 w-5" />
@@ -58,13 +56,13 @@ export function CustomerTable({ customers, isLoading, onEditCustomer }: Customer
                   </div>
                 </div>
               </td>
-              <td className="px-6 py-5">
+              <td className="px-6 py-3">
                 <div className="flex flex-col">
                   <span className="text-slate-600 font-medium text-xs">{customer.email || '—'}</span>
                   <span className="text-slate-400 text-[11px] mt-0.5">{customer.phone || '—'}</span>
                 </div>
               </td>
-              <td className="px-6 py-5">
+              <td className="px-6 py-3">
                 <div className="flex items-center gap-6">
                   <div className="flex flex-col">
                     <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wide">Spent</span>
@@ -76,7 +74,7 @@ export function CustomerTable({ customers, isLoading, onEditCustomer }: Customer
                   </div>
                 </div>
               </td>
-              <td className="px-6 py-5">
+              <td className="px-6 py-3">
                 <div className="flex flex-col">
                    <div className="flex items-center gap-1.5 text-slate-900 font-semibold text-xs">
                       <Star className="h-3 w-3 text-slate-400" />
@@ -87,8 +85,8 @@ export function CustomerTable({ customers, isLoading, onEditCustomer }: Customer
                    )}
                 </div>
               </td>
-              <td className="px-6 py-5 text-right">
-                <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+              <td className="px-6 py-3 text-right">
+                <div className="flex items-center justify-end gap-2 transition-all">
                   <button 
                     onClick={() => onEditCustomer(customer)}
                     className="h-8 w-8 flex items-center justify-center rounded-lg bg-white border border-slate-100 text-slate-400 hover:text-slate-900 shadow-sm transition-all"

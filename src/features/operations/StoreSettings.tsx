@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/authStore';
-import { Button } from '../../components/ui/button';
 import { 
   Save, Loader2, CheckCircle2, AlertTriangle, 
-  Star, Printer, Wifi, Globe, 
-  Zap, BellRing, Settings2
+  Star, Printer, Globe, BellRing
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 

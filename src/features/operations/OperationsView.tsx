@@ -5,7 +5,7 @@ import { AddProductForm } from './AddProductForm';
 import { VoidBillForm } from './VoidBillForm';
 import { StoreSettings } from './StoreSettings';
 import {
-  Settings, Ban, PackagePlus, LayoutGrid,
+  Ban, PackagePlus, LayoutGrid,
   ShieldAlert, Sliders, Activity
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -63,8 +63,8 @@ export function OperationsView() {
                 onClick={() => setActiveTab(tab.id as OperationTab)}
                 className={cn(
                   "flex items-center gap-2 px-6 py-2.5 rounded-xl text-[11px] font-semibold uppercase tracking-wider transition-all whitespace-nowrap",
-                  activeTab === tab.id 
-                    ? "bg-slate-900 text-white shadow-sm" 
+                  activeTab === tab.id
+                    ? "bg-slate-900 text-white shadow-sm"
                     : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                 )}
               >
@@ -100,7 +100,7 @@ export function OperationsView() {
                     Catalog
                   </h3>
                 </div>
-                <div className="p-6">
+                <div className="p-6 overflow-x-auto">
                   <ProductManagementTable />
                 </div>
               </div>

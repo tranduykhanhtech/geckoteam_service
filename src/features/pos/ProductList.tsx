@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { usePOSStore } from '../../store/posStore';
-import { Card, CardContent } from '../../components/ui/card';
 import { cn } from '../../lib/utils';
-import { Coffee, CakeSlice, Utensils, CupSoda, Loader2, PackageOpen, Search, Filter, Plus } from 'lucide-react';
+import { Coffee, CakeSlice, Utensils, CupSoda, Loader2, Search, Plus } from 'lucide-react';
 
 const getCategoryIcon = (category: string, className?: string) => {
   const defaultClass = className || "h-4 w-4 mr-2";

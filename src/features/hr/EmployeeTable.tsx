@@ -1,7 +1,6 @@
 import { useHRStore } from '../../store/hrStore';
 import type { EmployeeProfile } from '../../store/hrStore';
 import { Shield, User, Power, PowerOff, Loader2 } from 'lucide-react';
-import { Badge } from '../../components/ui/badge';
 import { cn } from '../../lib/utils';
 import { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
@@ -30,8 +29,8 @@ export function EmployeeTable() {
   };
 
   return (
-    <div className="overflow-hidden">
-      <table className="w-full text-sm text-left border-collapse">
+    <div className="w-full overflow-x-auto">
+      <table className="w-full text-sm text-left border-collapse min-w-[800px]">
         <thead>
           <tr className="border-b border-slate-50">
             <th className="px-6 py-4 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Employee</th>
@@ -47,7 +46,7 @@ export function EmployeeTable() {
             
             return (
               <tr key={emp.id} className={cn("group hover:bg-slate-50/50 transition-colors", !emp.is_active && "opacity-50")}>
-                <td className="px-6 py-5">
+                <td className="px-6 py-3">
                   <div className="flex items-center">
                     <div className={cn("h-9 w-9 rounded-xl flex items-center justify-center mr-4 border border-slate-100 bg-white shadow-sm transition-transform group-hover:scale-105", emp.role === 'admin' ? "text-slate-900" : "text-slate-400")}>
                       {emp.role === 'admin' ? <Shield className="h-4 w-4" /> : <User className="h-4 w-4" />}
@@ -63,13 +62,13 @@ export function EmployeeTable() {
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-5">
+                <td className="px-6 py-3">
                   <div className="flex flex-col">
                     <span className="text-slate-600 font-medium text-xs">{emp.email || '—'}</span>
                     <span className="text-slate-400 text-[11px] mt-0.5">{emp.phone || '—'}</span>
                   </div>
                 </td>
-                <td className="px-6 py-5">
+                <td className="px-6 py-3">
                   {isMe ? (
                     <span className="text-xs font-semibold text-slate-900 capitalize px-2.5 py-1 bg-slate-50 rounded-lg">
                       {emp.role}
@@ -87,10 +86,10 @@ export function EmployeeTable() {
                     </select>
                   )}
                 </td>
-                <td className="px-6 py-5 text-slate-400 text-xs font-medium">
+                <td className="px-6 py-3 text-slate-400 text-xs font-medium">
                   {new Date(emp.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                 </td>
-                <td className="px-6 py-5 text-right">
+                <td className="px-6 py-3 text-right">
                   <div className="flex items-center justify-end gap-3">
                     {loadingId === emp.id ? (
                       <Loader2 className="h-4 w-4 animate-spin text-slate-500" />

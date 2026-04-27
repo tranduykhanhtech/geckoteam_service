@@ -7,11 +7,8 @@ import {
   Package, 
   Edit2,
   Plus,
-  Minus,
-  ChevronRight
+  Minus
 } from 'lucide-react';
-import { Button } from '../../components/ui/button';
-import { Badge } from '../../components/ui/badge';
 import { cn } from '../../lib/utils';
 
 interface InventoryTableProps {
@@ -39,8 +36,8 @@ export function InventoryTable({ onEditItem }: InventoryTableProps) {
   };
 
   return (
-    <div className="overflow-hidden">
-      <table className="w-full text-sm text-left border-collapse">
+    <div className="w-full overflow-x-auto">
+      <table className="w-full text-sm text-left border-collapse min-w-[800px]">
         <thead>
           <tr className="border-b border-slate-50">
             <th className="px-6 py-4 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Ingredient</th>
@@ -68,7 +65,7 @@ export function InventoryTable({ onEditItem }: InventoryTableProps) {
 
               return (
                 <tr key={item.id} className="group hover:bg-slate-50/50 transition-colors">
-                  <td className="px-6 py-5">
+                  <td className="px-6 py-3">
                     <div className="flex items-center">
                       <div className="h-10 w-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center mr-4 text-slate-400 group-hover:text-slate-900 transition-all">
                         <Package className="h-5 w-5" />
@@ -78,7 +75,7 @@ export function InventoryTable({ onEditItem }: InventoryTableProps) {
                           {item.name}
                           <button 
                             onClick={() => onEditItem(item)}
-                            className="opacity-0 group-hover:opacity-100 p-1 hover:text-slate-900 transition-all"
+                            className="p-1 hover:text-slate-900 transition-all text-slate-300"
                           >
                             <Edit2 className="h-3 w-3" />
                           </button>
@@ -87,25 +84,25 @@ export function InventoryTable({ onEditItem }: InventoryTableProps) {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-5">
+                  <td className="px-6 py-3">
                     <span className="text-[10px] font-semibold px-2 py-1 bg-slate-100 rounded text-slate-500 uppercase tracking-wide">
                       {item.category_name}
                     </span>
                   </td>
-                  <td className="px-6 py-5">
-                    <div className="flex flex-col gap-2 min-w-[140px]">
+                  <td className="px-6 py-3">
+                    <div className="flex flex-col gap-1.5 min-w-[120px]">
                       <div className="flex justify-between items-end">
                         <span className={cn(
-                          "font-semibold text-base tracking-tight",
+                          "font-semibold text-sm tracking-tight",
                           item.quantity <= item.threshold ? 'text-rose-600' : 'text-slate-900'
                         )}>
-                          {Number(item.quantity).toLocaleString()} <span className="text-[10px] font-medium text-slate-400 uppercase ml-0.5">{item.unit}</span>
+                          {Number(item.quantity).toLocaleString()} <span className="text-[9px] font-medium text-slate-400 uppercase ml-0.5">{item.unit}</span>
                         </span>
-                        <span className="text-[10px] font-medium text-slate-400 uppercase">
+                        <span className="text-[9px] font-medium text-slate-400 uppercase">
                            Min: {item.threshold}
                         </span>
                       </div>
-                      <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                      <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
                         <div 
                           className={cn(
                             "h-full transition-all duration-1000",
@@ -117,7 +114,7 @@ export function InventoryTable({ onEditItem }: InventoryTableProps) {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-5">
+                  <td className="px-6 py-3">
                     <div className={cn(
                       "flex items-center gap-1.5 font-semibold text-[10px] uppercase tracking-wider",
                       status.color
@@ -126,7 +123,7 @@ export function InventoryTable({ onEditItem }: InventoryTableProps) {
                       {status.label}
                     </div>
                   </td>
-                  <td className="px-6 py-5 text-right">
+                  <td className="px-6 py-3 text-right">
                     {isEditingAdd ? (
                       <div className="flex items-center justify-end gap-2 animate-in fade-in slide-in-from-right-2 duration-300">
                         <input
@@ -170,7 +167,7 @@ export function InventoryTable({ onEditItem }: InventoryTableProps) {
                         </button>
                       </div>
                     ) : (
-                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                      <div className="flex justify-end gap-2 transition-all">
                         <button 
                           className="h-8 w-8 flex items-center justify-center rounded-lg bg-white border border-slate-100 text-slate-400 hover:text-slate-900 shadow-sm transition-all"
                           onClick={() => setEditingState({ id: item.id, type: 'add' })}

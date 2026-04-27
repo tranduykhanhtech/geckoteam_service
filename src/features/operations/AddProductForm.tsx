@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/authStore';
 import { useInventoryStore } from '../../store/inventoryStore';
-import { Button } from '../../components/ui/button';
 import { Plus, Loader2, CheckCircle2, AlertTriangle, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 

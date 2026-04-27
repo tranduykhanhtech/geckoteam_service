@@ -140,26 +140,26 @@ function MainLayout() {
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-hidden relative flex flex-col">
+      <main className="flex-1 min-w-0 overflow-hidden relative flex flex-col">
         <Suspense fallback={<PageLoader />}>
           <Routes>
             {allowedNavItems.some(i => i.path === '/') && (
-              <Route path="/" element={<div className="h-full overflow-y-auto"><DashboardOverview /></div>} />
+              <Route path="/" element={<DashboardOverview />} />
             )}
             {allowedNavItems.some(i => i.path === '/pos') && (
               <Route path="/pos" element={<POSView />} />
             )}
             {allowedNavItems.some(i => i.path === '/inventory') && (
-              <Route path="/inventory" element={<div className="h-full overflow-y-auto"><InventoryView /></div>} />
+              <Route path="/inventory" element={<InventoryView />} />
             )}
             {allowedNavItems.some(i => i.path === '/hr') && (
-              <Route path="/hr" element={<div className="h-full overflow-y-auto"><HRView /></div>} />
+              <Route path="/hr" element={<HRView />} />
             )}
             {allowedNavItems.some(i => i.path === '/crm') && (
-              <Route path="/crm" element={<div className="h-full overflow-y-auto"><CRMView /></div>} />
+              <Route path="/crm" element={<CRMView />} />
             )}
             {allowedNavItems.some(i => i.path === '/operations') && (
-              <Route path="/operations" element={<div className="h-full overflow-y-auto"><OperationsView /></div>} />
+              <Route path="/operations" element={<OperationsView />} />
             )}
 
             {/* Fallback route */}

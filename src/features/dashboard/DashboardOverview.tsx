@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/authStore';
 import {
   DollarSign, ShoppingBag, AlertTriangle, TrendingUp,
-  Users, ArrowUpRight, Loader2, CalendarDays,
+  Users, ArrowUpRight, Loader2,
   ReceiptText, ArrowDownRight, Package,
   Zap, Star, Award, Clock
 } from 'lucide-react';
@@ -255,7 +255,7 @@ export function DashboardOverview() {
   }
 
   return (
-    <div className="flex-1 p-4 md:p-8 space-y-8 bg-[#F8FAFC]">
+    <div className="flex-1 h-full p-4 md:p-8 space-y-8 bg-[#F8FAFC] overflow-y-auto pb-24">
       {/* Apple Style Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>

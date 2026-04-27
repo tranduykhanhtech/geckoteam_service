@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Button } from '../../components/ui/button';
 import { Ban, Loader2, CheckCircle2, AlertTriangle, Search } from 'lucide-react';
 import { cn } from '../../lib/utils';
 

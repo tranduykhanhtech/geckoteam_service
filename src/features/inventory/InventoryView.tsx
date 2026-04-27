@@ -1,16 +1,13 @@
 import { useState, useEffect } from 'react';
 import { InventoryTable } from './InventoryTable';
-import { Button } from '../../components/ui/button';
 import { 
   FileDown, Plus, History, Loader2, Package, 
-  AlertTriangle, XCircle, TrendingUp, Zap, 
-  ChevronRight, ArrowRight, Layers
+  AlertTriangle, XCircle, 
+  ChevronRight, Layers
 } from 'lucide-react';
 import { useInventoryStore } from '../../store/inventoryStore';
-import { Badge } from '../../components/ui/badge';
 import { NewItemModal } from './NewItemModal';
 import { AdjustmentHistoryModal } from './AdjustmentHistoryModal';
-import { cn } from '../../lib/utils';
 
 export function InventoryView() {
   const { items, isLoading, fetchItems, fetchCategories } = useInventoryStore();
@@ -95,7 +92,7 @@ export function InventoryView() {
   }
 
   return (
-    <div className="flex-1 space-y-8 p-4 md:p-8 bg-slate-50 min-h-full overflow-y-auto pb-24">
+    <div className="flex-1 h-full space-y-8 p-4 md:p-8 bg-slate-50 overflow-y-auto pb-24">
       {/* Apple Style Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div>
@@ -186,7 +183,7 @@ export function InventoryView() {
               <h3 className="font-semibold text-lg text-slate-900 tracking-tight">Active Ledger</h3>
            </div>
         </div>
-        <div className="overflow-x-auto">
+        <div className="p-6 overflow-x-auto">
           <InventoryTable onEditItem={handleEditItem} />
         </div>
       </div>
@@ -221,10 +218,3 @@ function MetricCard({ title, value, icon, subtitle }: any) {
   );
 }
 
-function Card({ children, className }: any) {
-  return (
-    <div className={cn("bg-white", className)}>
-      {children}
-    </div>
-  );
-}

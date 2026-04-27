@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react';
 import { usePOSStore } from '../../store/posStore';
 import { useCRMStore } from '../../store/crmStore';
-import { Button } from '../../components/ui/button';
 import { 
   Trash2, Plus, Minus, ShoppingCart, CheckCircle2, 
   Loader2, Banknote, CreditCard, QrCode, User, 
-  Search, X, Star, ChevronRight, Receipt, Wallet
+  Search, X, ChevronRight, Receipt
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { Badge } from '../../components/ui/badge';
 
 type PaymentMethod = 'Cash' | 'Card' | 'QR Code';
 
@@ -17,14 +15,13 @@ export function Cart() {
     cart, updateQuantity, removeFromCart, clearCart, 
     getSubtotal, getLoyaltyDiscount, getTotal, 
     checkout, selectedCustomer, setSelectedCustomer,
-    pointsToRedeem, setPointsToRedeem, loyaltyConfig
+    pointsToRedeem, setPointsToRedeem
   } = usePOSStore();
   const { customers, fetchCustomers } = useCRMStore();
   
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Cash');
-  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   
   const [customerSearch, setCustomerSearch] = useState('');
   const [showCustomerSearch, setShowCustomerSearch] = useState(false);
@@ -41,12 +38,11 @@ export function Cart() {
 
   const handleCheckout = async () => {
     setIsCheckingOut(true);
-    setCheckoutError(null);
     try {
       await checkout();
       setCheckoutSuccess(true);
     } catch (err: any) {
-      setCheckoutError(err.message || "Failed to process order.");
+      console.error("Checkout error:", err);
     } finally {
       setIsCheckingOut(false);
     }
@@ -61,7 +57,6 @@ export function Cart() {
 
   const handleNewOrder = () => {
     setCheckoutSuccess(false);
-    setCheckoutError(null);
     setPaymentMethod('Cash');
     setCashReceived('');
     setSelectedCustomer(null);

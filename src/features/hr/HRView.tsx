@@ -2,14 +2,10 @@ import { useState, useEffect } from 'react';
 import { useHRStore } from '../../store/hrStore';
 import { EmployeeTable } from './EmployeeTable';
 import { NewEmployeeModal } from './NewEmployeeModal';
-import { Button } from '../../components/ui/button';
 import { 
-  Users, Plus, Loader2, ShieldCheck, 
-  UserPlus, Briefcase, Zap, Star,
-  Shield, UserCog
+  Users, Loader2, ShieldCheck, 
+  UserPlus, Briefcase
 } from 'lucide-react';
-import { Badge } from '../../components/ui/badge';
-import { cn } from '../../lib/utils';
 
 export function HRView() {
   const { employees, isLoading, fetchEmployees } = useHRStore();
@@ -36,7 +32,7 @@ export function HRView() {
   }
 
   return (
-    <div className="flex-1 space-y-8 p-4 md:p-8 bg-slate-50 min-h-full overflow-y-auto pb-24">
+    <div className="flex-1 h-full space-y-8 p-4 md:p-8 bg-slate-50 overflow-y-auto pb-24">
       {/* Apple Style Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div>
@@ -87,7 +83,7 @@ export function HRView() {
               <h3 className="font-semibold text-lg text-slate-900 tracking-tight">Staff Directory</h3>
            </div>
         </div>
-        <div className="overflow-x-auto">
+        <div className="p-6 overflow-x-auto">
           <EmployeeTable />
         </div>
       </div>

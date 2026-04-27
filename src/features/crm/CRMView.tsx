@@ -1,14 +1,10 @@
 import { useState, useEffect } from 'react';
 import { CustomerTable } from './CustomerTable';
-import { Button } from '../../components/ui/button';
 import { 
-  Users, UserPlus, TrendingUp, Search, 
-  Calendar, Heart, Star, Sparkles, 
-  ChevronRight, ArrowUpRight
+  Users, UserPlus, TrendingUp, Search, Star, Loader2
 } from 'lucide-react';
 import { useCRMStore } from '../../store/crmStore';
 import { CustomerModal } from './CustomerModal';
-import { cn } from '../../lib/utils';
 
 export function CRMView() {
   const { customers, isLoading, fetchCustomers } = useCRMStore();
@@ -54,7 +50,7 @@ export function CRMView() {
   }
 
   return (
-    <div className="flex-1 space-y-8 p-4 md:p-8 bg-slate-50 min-h-full overflow-y-auto pb-24">
+    <div className="flex-1 h-full space-y-8 p-4 md:p-8 bg-slate-50 overflow-y-auto pb-24">
       {/* Apple Style Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div>
@@ -115,7 +111,7 @@ export function CRMView() {
               <h3 className="font-semibold text-lg text-slate-900 tracking-tight">Member Registry</h3>
            </div>
         </div>
-        <div className="overflow-x-auto">
+        <div className="p-6 overflow-x-auto">
           <CustomerTable 
             customers={filteredCustomers} 
             isLoading={isLoading} 
@@ -153,6 +149,3 @@ function MetricCard({ title, value, icon, subtitle }: any) {
   );
 }
 
-function Loader2({ className }: any) {
-  return <TrendingUp className={className} />; // Fallback if Loader2 icon missing
-}
