@@ -4,8 +4,13 @@ import { useAuthStore } from '../../store/authStore';
 import { AddProductForm } from './AddProductForm';
 import { VoidBillForm } from './VoidBillForm';
 import { StoreSettings } from './StoreSettings';
-import { Settings, Ban, PackagePlus } from 'lucide-react';
+import {
+  Settings, Ban, PackagePlus, LayoutGrid,
+  ShieldAlert, Sliders, Activity
+} from 'lucide-react';
 import { cn } from '../../lib/utils';
+
+import { ProductManagementTable } from './ProductManagementTable';
 
 type OperationTab = 'menu-management' | 'order-management' | 'store-settings';
 
@@ -15,102 +20,100 @@ export function OperationsView() {
   const [activeTab, setActiveTab] = useState<OperationTab>('menu-management');
 
   useEffect(() => {
-    fetchProductsAndCategories();
-  }, [fetchProductsAndCategories]);
+    // When managing menu, fetch all products including unavailable ones
+    fetchProductsAndCategories(activeTab === 'menu-management');
+  }, [fetchProductsAndCategories, activeTab]);
 
   // Only allow admin and manager roles
   if (profile?.role !== 'admin' && profile?.role !== 'manager') {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-8 bg-slate-50">
-        <Ban className="h-12 w-12 text-slate-300 mb-4" />
-        <h2 className="text-xl font-bold text-slate-900">Access Denied</h2>
-        <p className="text-slate-500 text-center max-w-md mt-2">
-          You do not have permission to view this page. Operations are restricted to Managers and Admins.
+      <div className="flex-1 flex flex-col items-center justify-center p-8 bg-slate-50/50">
+        <div className="h-20 w-20 rounded-full bg-rose-50 flex items-center justify-center mb-6">
+          <ShieldAlert className="h-10 w-10 text-rose-500" />
+        </div>
+        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Access Restricted</h2>
+        <p className="text-slate-500 text-center max-w-md mt-2 font-medium">
+          Command operations are reserved for privileged accounts. Please contact your administrator.
         </p>
       </div>
     );
   }
 
+  const tabs = [
+    { id: 'menu-management', label: 'Menu Catalog', icon: LayoutGrid },
+    { id: 'order-management', label: 'Order Overrides', icon: Activity },
+    ...(profile.role === 'admin' ? [{ id: 'store-settings', label: 'Global Config', icon: Sliders }] : []),
+  ];
+
   return (
-    <div className="flex-1 flex flex-col h-full bg-slate-50">
-      <div className="p-8 pb-6 border-b border-slate-200 bg-white">
-        <h2 className="text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-3">
-          <Settings className="h-8 w-8 text-indigo-500" />
-          Store Operations
-        </h2>
-        <p className="text-slate-500 mt-2">Manage your POS menu, pricing, and administrative overrides.</p>
-        
-        <div className="flex gap-8 mt-8 border-b border-slate-200">
-          <button
-            onClick={() => setActiveTab('menu-management')}
-            className={cn(
-              "pb-4 text-sm font-bold transition-colors relative",
-              activeTab === 'menu-management' ? "text-indigo-600" : "text-slate-500 hover:text-slate-900"
-            )}
-          >
-            Menu Management
-            {activeTab === 'menu-management' && (
-              <span className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-600 rounded-t-full" />
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('order-management')}
-            className={cn(
-              "pb-4 text-sm font-bold transition-colors relative",
-              activeTab === 'order-management' ? "text-indigo-600" : "text-slate-500 hover:text-slate-900"
-            )}
-          >
-            Order Management
-            {activeTab === 'order-management' && (
-              <span className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-600 rounded-t-full" />
-            )}
-          </button>
-          {profile.role === 'admin' && (
-            <button
-              onClick={() => setActiveTab('store-settings')}
-              className={cn(
-                "pb-4 text-sm font-bold transition-colors relative",
-                activeTab === 'store-settings' ? "text-indigo-600" : "text-slate-500 hover:text-slate-900"
-              )}
-            >
-              Store Settings
-              {activeTab === 'store-settings' && (
-                <span className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-600 rounded-t-full" />
-              )}
-            </button>
-          )}
+    <div className="flex-1 flex flex-col h-full bg-slate-50 overflow-hidden">
+      {/* Apple Style Header */}
+      <div className="p-8 pb-0 bg-white/80 backdrop-blur-md border-b border-slate-100 shrink-0">
+        <div className="flex items-center gap-3">
+          <h2 className="text-3xl font-semibold tracking-tight text-slate-900">Settings</h2>
+        </div>
+        <p className="text-slate-500 font-medium text-sm mt-1">Configure your store and menu.</p>
+
+        {/* Minimalist Tabs */}
+        <div className="mt-8 flex items-center overflow-x-auto no-scrollbar">
+          <div className="flex gap-2 pb-4">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as OperationTab)}
+                className={cn(
+                  "flex items-center gap-2 px-6 py-2.5 rounded-xl text-[11px] font-semibold uppercase tracking-wider transition-all whitespace-nowrap",
+                  activeTab === tab.id 
+                    ? "bg-slate-900 text-white shadow-sm" 
+                    : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                )}
+              >
+                <tab.icon className={cn("h-4 w-4", activeTab === tab.id ? "text-white" : "text-slate-400")} />
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-8">
-        <div className="max-w-3xl">
+      {/* Content Area */}
+      <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24">
+        <div className="max-w-4xl mx-auto space-y-8">
           {activeTab === 'menu-management' && (
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
-              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                <div>
-                  <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                    <PackagePlus className="h-5 w-5 text-amber-500" />
-                    Add Menu Item
+            <>
+              <div className="apple-card overflow-hidden bg-white">
+                <div className="p-6 border-b border-slate-50">
+                  <h3 className="font-semibold text-slate-900 flex items-center gap-2 text-lg tracking-tight">
+                    <PackagePlus className="h-5 w-5 text-slate-900" />
+                    New Product
                   </h3>
-                  <p className="text-xs text-slate-500 mt-1 uppercase font-bold tracking-widest">New Product</p>
+                </div>
+                <div className="p-6">
+                  <AddProductForm categories={categories} onSuccess={() => fetchProductsAndCategories(true)} />
                 </div>
               </div>
-              <div className="p-6">
-                <AddProductForm categories={categories} onSuccess={fetchProductsAndCategories} />
+
+              <div className="apple-card overflow-hidden bg-white">
+                <div className="p-6 border-b border-slate-50">
+                  <h3 className="font-semibold text-slate-900 flex items-center gap-2 text-lg tracking-tight">
+                    <LayoutGrid className="h-5 w-5 text-slate-900" />
+                    Catalog
+                  </h3>
+                </div>
+                <div className="p-6">
+                  <ProductManagementTable />
+                </div>
               </div>
-            </div>
+            </>
           )}
 
           {activeTab === 'order-management' && (
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
-              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                <div>
-                  <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                    <Ban className="h-5 w-5 text-red-500" />
-                    Void Completed Bill
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-1 uppercase font-bold tracking-widest">Administrative Override</p>
-                </div>
+            <div className="apple-card overflow-hidden bg-white">
+              <div className="p-6 border-b border-slate-50">
+                <h3 className="font-semibold text-slate-900 flex items-center gap-2 text-lg tracking-tight">
+                  <Ban className="h-5 w-5 text-slate-900" />
+                  Void Order
+                </h3>
               </div>
               <div className="p-6">
                 <VoidBillForm voidOrder={voidOrder} />
@@ -119,15 +122,12 @@ export function OperationsView() {
           )}
 
           {activeTab === 'store-settings' && (
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
-              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                <div>
-                  <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                    <Settings className="h-5 w-5 text-indigo-500" />
-                    Global Settings
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-1 uppercase font-bold tracking-widest">Configuration</p>
-                </div>
+            <div className="apple-card overflow-hidden bg-white">
+              <div className="p-6 border-b border-slate-50">
+                <h3 className="font-semibold text-slate-900 flex items-center gap-2 text-lg tracking-tight">
+                  <Sliders className="h-5 w-5 text-slate-900" />
+                  Configurations
+                </h3>
               </div>
               <div className="p-6">
                 <StoreSettings />

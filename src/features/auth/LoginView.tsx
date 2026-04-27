@@ -42,8 +42,8 @@ export function LoginView() {
         <h2 className="mt-6 text-center text-3xl font-extrabold text-slate-900">
           Gecko | Gecko Team Inc.
         </h2>
-        <p className="mt-2 text-center text-sm text-slate-600">
-          Sign in to access your dashboard, or <Link to="/register" className="font-medium text-emerald-600 hover:text-emerald-500">register your business</Link>
+        <p className="mt-2 text-center text-sm text-slate-500 font-medium">
+          Sign in to access your dashboard, or <Link to="/register" className="font-semibold text-slate-900 hover:underline decoration-slate-200">register your business</Link>
         </p>
       </div>
 
@@ -65,7 +65,7 @@ export function LoginView() {
                 <input
                   required
                   type="email"
-                  className="focus:ring-emerald-500 focus:border-emerald-500 block w-full pl-10 sm:text-sm border-slate-300 rounded-md py-2 border outline-none"
+                  className="focus:ring-1 focus:ring-slate-900 focus:border-slate-900 block w-full pl-10 sm:text-sm border-slate-200 rounded-xl py-2.5 border outline-none transition-all"
                   placeholder="admin@gecko.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -82,7 +82,7 @@ export function LoginView() {
                 <input
                   required
                   type="password"
-                  className="focus:ring-emerald-500 focus:border-emerald-500 block w-full pl-10 sm:text-sm border-slate-300 rounded-md py-2 border outline-none"
+                  className="focus:ring-1 focus:ring-slate-900 focus:border-slate-900 block w-full pl-10 sm:text-sm border-slate-200 rounded-xl py-2.5 border outline-none transition-all"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -93,7 +93,7 @@ export function LoginView() {
             <div>
               <Button
                 type="submit"
-                className="w-full bg-slate-900 hover:bg-slate-800 text-white py-2.5"
+                className="w-full bg-slate-900 hover:bg-slate-800 text-white py-6 rounded-xl text-sm font-semibold transition-all active:scale-[0.98]"
                 disabled={loading}
               >
                 {loading ? (

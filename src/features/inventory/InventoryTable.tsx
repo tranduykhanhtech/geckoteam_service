@@ -7,7 +7,8 @@ import {
   Package, 
   Edit2,
   Plus,
-  Minus
+  Minus,
+  ChevronRight
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
@@ -32,163 +33,165 @@ export function InventoryTable({ onEditItem }: InventoryTableProps) {
   };
 
   const getStockStatus = (item: InventoryItem) => {
-    if (item.quantity <= 0) return { label: 'Out of Stock', variant: 'destructive', icon: AlertCircle };
-    if (item.quantity <= item.threshold) return { label: 'Low Stock', variant: 'warning', icon: AlertCircle };
-    return { label: 'Healthy', variant: 'success', icon: CheckCircle2 };
+    if (item.quantity <= 0) return { label: 'Out of Stock', variant: 'destructive', icon: AlertCircle, color: 'text-rose-600', bg: 'bg-rose-50' };
+    if (item.quantity <= item.threshold) return { label: 'Low Stock', variant: 'warning', icon: AlertCircle, color: 'text-amber-600', bg: 'bg-amber-50' };
+    return { label: 'In Stock', variant: 'success', icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50' };
   };
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-hidden">
       <table className="w-full text-sm text-left border-collapse">
-        <thead className="bg-[#F1F5F9] text-slate-500 font-bold border-b border-slate-200">
-          <tr>
-            <th className="px-6 py-5 uppercase tracking-widest text-[10px]">Ingredient & Source</th>
-            <th className="px-6 py-5 uppercase tracking-widest text-[10px]">Category</th>
-            <th className="px-6 py-5 uppercase tracking-widest text-[10px]">Current Inventory</th>
-            <th className="px-6 py-5 uppercase tracking-widest text-[10px]">Inventory Status</th>
-            <th className="px-6 py-5 uppercase tracking-widest text-[10px] text-right">Inventory Actions</th>
+        <thead>
+          <tr className="border-b border-slate-50">
+            <th className="px-6 py-4 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Ingredient</th>
+            <th className="px-6 py-4 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Category</th>
+            <th className="px-6 py-4 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Level</th>
+            <th className="px-6 py-4 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Status</th>
+            <th className="px-6 py-4 text-right text-[10px] font-semibold uppercase tracking-wider text-slate-400">Actions</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
-          {items.map((item) => {
-            const status = getStockStatus(item);
-            const StatusIcon = status.icon;
-            const isEditingAdd = editingState?.id === item.id && editingState.type === 'add';
-            const isEditingDeduct = editingState?.id === item.id && editingState.type === 'deduct';
-            
-            // Calculate percentage for progress bar (cap at 100%)
-            const stockPercentage = Math.min((item.quantity / (item.threshold * 3)) * 100, 100);
+        <tbody className="divide-y divide-slate-50">
+          {items.length === 0 ? (
+            <tr>
+              <td colSpan={5} className="px-6 py-12 text-center text-slate-400 font-medium text-xs">
+                No inventory records found.
+              </td>
+            </tr>
+          ) : (
+            items.map((item) => {
+              const status = getStockStatus(item);
+              const StatusIcon = status.icon;
+              const isEditingAdd = editingState?.id === item.id && editingState.type === 'add';
+              const isEditingDeduct = editingState?.id === item.id && editingState.type === 'deduct';
+              
+              const stockPercentage = Math.min((item.quantity / (item.threshold * 2.5)) * 100, 100);
 
-            return (
-              <tr key={item.id} className="hover:bg-slate-50/80 transition-all duration-200 group">
-                <td className="px-6 py-5">
-                  <div className="flex items-center">
-                    <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center mr-4 group-hover:bg-white group-hover:shadow-sm transition-all duration-300">
-                      <Package className="h-5 w-5 text-slate-400 group-hover:text-emerald-500 transition-colors" />
+              return (
+                <tr key={item.id} className="group hover:bg-slate-50/50 transition-colors">
+                  <td className="px-6 py-5">
+                    <div className="flex items-center">
+                      <div className="h-10 w-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center mr-4 text-slate-400 group-hover:text-slate-900 transition-all">
+                        <Package className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <div className="font-semibold text-slate-900 flex items-center gap-2 text-sm tracking-tight">
+                          {item.name}
+                          <button 
+                            onClick={() => onEditItem(item)}
+                            className="opacity-0 group-hover:opacity-100 p-1 hover:text-slate-900 transition-all"
+                          >
+                            <Edit2 className="h-3 w-3" />
+                          </button>
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-medium mt-0.5 uppercase tracking-wide">ID: {item.id.slice(0, 8)}</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="font-bold text-slate-900 flex items-center gap-2 text-[15px]">
-                        {item.name}
+                  </td>
+                  <td className="px-6 py-5">
+                    <span className="text-[10px] font-semibold px-2 py-1 bg-slate-100 rounded text-slate-500 uppercase tracking-wide">
+                      {item.category_name}
+                    </span>
+                  </td>
+                  <td className="px-6 py-5">
+                    <div className="flex flex-col gap-2 min-w-[140px]">
+                      <div className="flex justify-between items-end">
+                        <span className={cn(
+                          "font-semibold text-base tracking-tight",
+                          item.quantity <= item.threshold ? 'text-rose-600' : 'text-slate-900'
+                        )}>
+                          {Number(item.quantity).toLocaleString()} <span className="text-[10px] font-medium text-slate-400 uppercase ml-0.5">{item.unit}</span>
+                        </span>
+                        <span className="text-[10px] font-medium text-slate-400 uppercase">
+                           Min: {item.threshold}
+                        </span>
+                      </div>
+                      <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                        <div 
+                          className={cn(
+                            "h-full transition-all duration-1000",
+                            item.quantity === 0 ? 'bg-rose-500' : 
+                            item.quantity <= item.threshold ? 'bg-amber-500' : 'bg-slate-900'
+                          )}
+                          style={{ width: `${stockPercentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-5">
+                    <div className={cn(
+                      "flex items-center gap-1.5 font-semibold text-[10px] uppercase tracking-wider",
+                      status.color
+                    )}>
+                      <StatusIcon className="h-3.5 w-3.5" />
+                      {status.label}
+                    </div>
+                  </td>
+                  <td className="px-6 py-5 text-right">
+                    {isEditingAdd ? (
+                      <div className="flex items-center justify-end gap-2 animate-in fade-in slide-in-from-right-2 duration-300">
+                        <input
+                          type="number"
+                          className="w-20 h-9 px-3 bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-slate-900 outline-none text-sm font-semibold"
+                          placeholder="0"
+                          value={adjustAmount}
+                          onChange={(e) => setAdjustAmount(e.target.value)}
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === 'Escape') setEditingState(null);
+                            if (e.key === 'Enter') handleAdjustSubmit(item.id, true);
+                          }}
+                        />
                         <button 
-                          onClick={() => onEditItem(item)}
-                          className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-200 rounded-lg transition-all"
+                          onClick={() => handleAdjustSubmit(item.id, true)}
+                          className="h-9 px-4 bg-slate-900 text-white rounded-lg hover:bg-slate-800 font-semibold text-[10px] uppercase tracking-wider transition-all"
                         >
-                          <Edit2 className="h-3 w-3 text-slate-400" />
+                          Add
                         </button>
                       </div>
-                      <div className="text-[10px] text-slate-400 font-mono tracking-tighter">SKU: {item.id.slice(0, 12).toUpperCase()}</div>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-5">
-                  <span className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 text-[11px] font-bold uppercase tracking-wider">
-                    {item.category_name}
-                  </span>
-                </td>
-                <td className="px-6 py-5">
-                  <div className="flex flex-col gap-2 min-w-[140px]">
-                    <div className="flex justify-between items-baseline">
-                      <span className={cn(
-                        "font-black text-base font-mono",
-                        status.variant === 'destructive' ? 'text-red-600' : 'text-slate-900'
-                      )}>
-                        {Number(item.quantity).toLocaleString()} <span className="text-[10px] font-bold text-slate-400 uppercase">{item.unit}</span>
-                      </span>
-                      {item.unit !== item.weight_volume_unit && (
-                        <span className="text-[10px] text-slate-400 font-bold">
-                          {Number(item.quantity * item.weight_volume_value).toLocaleString()} {item.weight_volume_unit}
-                        </span>
-                      )}
-                    </div>
-                    {/* Visual Progress Bar */}
-                    <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                      <div 
-                        className={cn(
-                          "h-full transition-all duration-500",
-                          status.variant === 'destructive' ? 'bg-red-500' : 
-                          status.variant === 'warning' ? 'bg-amber-500' : 'bg-emerald-500'
-                        )}
-                        style={{ width: `${stockPercentage}%` }}
-                      />
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-5">
-                  <Badge variant={status.variant as any} className="flex items-center w-fit gap-1.5 shadow-none py-1 px-3 font-bold border-none">
-                    <StatusIcon className="h-3.5 w-3.5" />
-                    {status.label}
-                  </Badge>
-                  <p className="text-[10px] text-slate-400 mt-1.5 font-medium italic">Min required: {item.threshold} {item.unit}</p>
-                </td>
-                <td className="px-6 py-5 text-right">
-                  {isEditingAdd ? (
-                    <div className="flex items-center justify-end space-x-2 animate-in slide-in-from-right-2 duration-200">
-                      <input
-                        type="number"
-                        className="w-24 h-9 px-3 py-1 text-sm border-2 border-emerald-500/30 rounded-lg focus:outline-none focus:border-emerald-500 bg-white font-mono font-bold"
-                        placeholder="Qty"
-                        value={adjustAmount}
-                        onChange={(e) => setAdjustAmount(e.target.value)}
-                        autoFocus
-                        onKeyDown={(e) => {
-                          if (e.key === 'Escape') setEditingState(null);
-                          if (e.key === 'Enter') handleAdjustSubmit(item.id, true);
-                        }}
-                      />
-                      <button 
-                        onClick={() => handleAdjustSubmit(item.id, true)}
-                        className="h-9 px-4 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 shadow-md shadow-emerald-600/20 font-bold text-xs"
-                      >
-                        ADD
-                      </button>
-                    </div>
-                  ) : isEditingDeduct ? (
-                    <div className="flex items-center justify-end space-x-2 animate-in slide-in-from-right-2 duration-200">
-                      <input
-                        type="number"
-                        className="w-24 h-9 px-3 py-1 text-sm border-2 border-red-500/30 rounded-lg focus:outline-none focus:border-red-500 bg-white font-mono font-bold"
-                        placeholder="Qty"
-                        value={adjustAmount}
-                        onChange={(e) => setAdjustAmount(e.target.value)}
-                        autoFocus
-                        onKeyDown={(e) => {
-                          if (e.key === 'Escape') setEditingState(null);
-                          if (e.key === 'Enter') handleAdjustSubmit(item.id, false);
-                        }}
-                      />
-                      <button 
-                        onClick={() => handleAdjustSubmit(item.id, false)}
-                        className="h-9 px-4 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-md shadow-red-600/20 font-bold text-xs"
-                      >
-                        USE
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex justify-end space-x-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className="h-9 px-4 text-emerald-600 border-emerald-100 bg-emerald-50/50 hover:bg-emerald-600 hover:text-white font-bold transition-all"
-                        onClick={() => setEditingState({ id: item.id, type: 'add' })}
-                      >
-                        <Plus className="h-3 w-3 mr-1.5" />
-                        RESTOCK
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className="h-9 px-4 text-red-600 border-red-100 bg-red-50/50 hover:bg-red-600 hover:text-white font-bold transition-all"
-                        onClick={() => setEditingState({ id: item.id, type: 'deduct' })}
-                      >
-                        <Minus className="h-3 w-3 mr-1.5" />
-                        DEDUCT
-                      </Button>
-                    </div>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
+                    ) : isEditingDeduct ? (
+                      <div className="flex items-center justify-end gap-2 animate-in fade-in slide-in-from-right-2 duration-300">
+                        <input
+                          type="number"
+                          className="w-20 h-9 px-3 bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-slate-900 outline-none text-sm font-semibold"
+                          placeholder="0"
+                          value={adjustAmount}
+                          onChange={(e) => setAdjustAmount(e.target.value)}
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === 'Escape') setEditingState(null);
+                            if (e.key === 'Enter') handleAdjustSubmit(item.id, false);
+                          }}
+                        />
+                        <button 
+                          onClick={() => handleAdjustSubmit(item.id, false)}
+                          className="h-9 px-4 bg-rose-500 text-white rounded-lg hover:bg-rose-600 font-semibold text-[10px] uppercase tracking-wider transition-all"
+                        >
+                          Deduct
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                        <button 
+                          className="h-8 w-8 flex items-center justify-center rounded-lg bg-white border border-slate-100 text-slate-400 hover:text-slate-900 shadow-sm transition-all"
+                          onClick={() => setEditingState({ id: item.id, type: 'add' })}
+                          title="Restock"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
+                        <button 
+                          className="h-8 w-8 flex items-center justify-center rounded-lg bg-white border border-slate-100 text-slate-400 hover:text-rose-500 shadow-sm transition-all"
+                          onClick={() => setEditingState({ id: item.id, type: 'deduct' })}
+                          title="Use"
+                        >
+                          <Minus className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              );
+            })
+          )}
         </tbody>
       </table>
     </div>

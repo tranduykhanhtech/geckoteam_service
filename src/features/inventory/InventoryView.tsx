@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
 import { InventoryTable } from './InventoryTable';
 import { Button } from '../../components/ui/button';
-import { FileDown, Plus, History, Loader2, Package, AlertTriangle, XCircle, TrendingUp } from 'lucide-react';
+import { 
+  FileDown, Plus, History, Loader2, Package, 
+  AlertTriangle, XCircle, TrendingUp, Zap, 
+  ChevronRight, ArrowRight, Layers
+} from 'lucide-react';
 import { useInventoryStore } from '../../store/inventoryStore';
 import { Badge } from '../../components/ui/badge';
 import { NewItemModal } from './NewItemModal';
@@ -80,178 +84,147 @@ export function InventoryView() {
 
   if (isLoading && items.length === 0) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center h-full bg-slate-50">
-        <Loader2 className="h-10 w-10 animate-spin text-emerald-500 mb-4" />
-        <p className="text-slate-500 font-medium">Preparing inventory data...</p>
+      <div className="flex-1 flex flex-col items-center justify-center h-full bg-slate-50/50">
+        <div className="relative">
+          <Loader2 className="h-10 w-10 text-slate-900 animate-spin" />
+          <Package className="h-4 w-4 text-slate-900 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+        </div>
+        <p className="mt-4 text-slate-400 font-medium tracking-wider uppercase text-[10px]">Auditing Stock</p>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 space-y-8 p-8 bg-[#F8FAFC] min-h-full">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2 border-b border-slate-200">
+    <div className="flex-1 space-y-8 p-4 md:p-8 bg-slate-50 min-h-full overflow-y-auto pb-24">
+      {/* Apple Style Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <div className="h-8 w-1 bg-emerald-500 rounded-full" />
-            <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">Inventory Management</h2>
-          </div>
-          <p className="text-slate-500 font-medium">Monitor your stock levels, manage ingredients, and track adjustments.</p>
+          <h2 className="text-3xl font-semibold tracking-tight text-slate-900">Inventory</h2>
+          <p className="text-slate-500 font-medium text-sm mt-1">Unified supply chain management.</p>
         </div>
         
-        <div className="flex items-center gap-3">
-          <Button 
-            variant="outline" 
-            className="h-11 bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 shadow-sm"
+        <div className="flex flex-wrap items-center gap-3">
+          <button 
+            className="apple-btn-secondary h-11 px-6 text-sm flex items-center gap-2"
             onClick={() => setIsHistoryOpen(true)}
           >
-            <History className="mr-2 h-4 w-4" />
-            History Log
-          </Button>
+            <History className="h-4 w-4" />
+            Logs
+          </button>
 
-          {/* Export Dropdown */}
           <div className="relative">
-            <Button 
-              variant="outline" 
-              className="h-11 bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 shadow-sm"
+            <button 
+              className="apple-btn-secondary h-11 px-6 text-sm flex items-center gap-2"
               onClick={() => setIsExportOpen(!isExportOpen)}
             >
-              <FileDown className="mr-2 h-4 w-4" />
-              Export Data
-            </Button>
+              <FileDown className="h-4 w-4" />
+              Export
+            </button>
             
             {isExportOpen && (
               <>
-                {/* Backdrop to close dropdown when clicking outside */}
                 <div className="fixed inset-0 z-40" onClick={() => setIsExportOpen(false)} />
-                
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <div className="absolute right-0 top-full mt-3 w-48 bg-white border border-slate-100 rounded-2xl shadow-xl z-50 overflow-hidden p-1.5 animate-in fade-in zoom-in-95 duration-200">
                   <button 
-                    onClick={() => {
-                      console.log('Exporting CSV...');
-                      handleExportCSV();
-                      setIsExportOpen(false);
-                    }}
-                    className="w-full px-4 py-3 text-sm text-left hover:bg-slate-50 text-slate-700 font-medium flex items-center gap-2 border-b border-slate-100"
+                    onClick={() => { handleExportCSV(); setIsExportOpen(false); }}
+                    className="w-full px-4 py-2.5 text-xs text-left hover:bg-slate-50 text-slate-900 font-semibold flex items-center justify-between rounded-xl group transition-all"
                   >
-                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                    Export as CSV (.csv)
+                    CSV Format
+                    <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100" />
                   </button>
                   <button 
-                    onClick={() => {
-                      console.log('Exporting Excel...');
-                      handleExportExcel();
-                      setIsExportOpen(false);
-                    }}
-                    className="w-full px-4 py-3 text-sm text-left hover:bg-slate-50 text-slate-700 font-medium flex items-center gap-2"
+                    onClick={() => { handleExportExcel(); setIsExportOpen(false); }}
+                    className="w-full px-4 py-2.5 text-xs text-left hover:bg-slate-50 text-slate-900 font-semibold flex items-center justify-between rounded-xl group transition-all"
                   >
-                    <span className="h-2 w-2 rounded-full bg-blue-500" />
-                    Export as Excel (.xls)
+                    Excel Sheet
+                    <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100" />
                   </button>
                 </div>
               </>
             )}
           </div>
 
-          <Button 
-            className="h-11 bg-slate-900 text-white hover:bg-slate-800 shadow-lg shadow-slate-900/10 px-6"
+          <button 
             onClick={() => setIsModalOpen(true)}
+            className="apple-btn-primary h-11 px-6 text-sm uppercase tracking-wider flex items-center gap-2"
           >
-            <Plus className="mr-2 h-5 w-5" />
-            Add New Item
-          </Button>
+            <Plus className="h-4 w-4" />
+            Add Material
+          </button>
         </div>
       </div>
 
-      {/* Summary Metrics Grid */}
-      <div className="grid gap-6 md:grid-cols-3">
-        {/* Total Items Card */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm relative overflow-hidden group hover:shadow-md transition-all duration-300">
-          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform duration-500">
-            <Package className="h-24 w-24 text-slate-900" />
-          </div>
-          <div className="relative z-10">
-            <div className="h-12 w-12 rounded-xl bg-slate-100 flex items-center justify-center mb-4 text-slate-600">
-              <Package className="h-6 w-6" />
-            </div>
-            <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Total Ingredients</p>
-            <div className="flex items-baseline gap-2">
-              <p className="text-4xl font-black text-slate-900">{items.length}</p>
-              <span className="text-emerald-500 text-xs font-bold flex items-center">
-                <TrendingUp className="h-3 w-3 mr-0.5" />
-                Live
-              </span>
-            </div>
-          </div>
-        </div>
-        
-        {/* Low Stock Card */}
-        <div className={cn(
-          "p-6 rounded-2xl border shadow-sm relative overflow-hidden group hover:shadow-md transition-all duration-300",
-          lowStockCount > 0 ? "bg-amber-50/50 border-amber-200/60" : "bg-white border-slate-200/60"
-        )}>
-          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform duration-500 text-amber-600">
-            <AlertTriangle className="h-24 w-24" />
-          </div>
-          <div className="relative z-10">
-            <div className={cn(
-              "h-12 w-12 rounded-xl flex items-center justify-center mb-4",
-              lowStockCount > 0 ? "bg-amber-100 text-amber-600" : "bg-slate-100 text-slate-400"
-            )}>
-              <AlertTriangle className="h-6 w-6" />
-            </div>
-            <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Low Stock Alerts</p>
-            <div className="flex items-center gap-3">
-              <p className="text-4xl font-black text-slate-900">{lowStockCount}</p>
-              {lowStockCount > 0 && (
-                <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none font-bold py-1">
-                  Needs Reorder
-                </Badge>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Out of Stock Card */}
-        <div className={cn(
-          "p-6 rounded-2xl border shadow-sm relative overflow-hidden group hover:shadow-md transition-all duration-300",
-          outOfStockCount > 0 ? "bg-red-50/50 border-red-200/60" : "bg-white border-slate-200/60"
-        )}>
-          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform duration-500 text-red-600">
-            <XCircle className="h-24 w-24" />
-          </div>
-          <div className="relative z-10">
-            <div className={cn(
-              "h-12 w-12 rounded-xl flex items-center justify-center mb-4",
-              outOfStockCount > 0 ? "bg-red-100 text-red-600" : "bg-slate-100 text-slate-400"
-            )}>
-              <XCircle className="h-6 w-6" />
-            </div>
-            <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Critical Shortage</p>
-            <div className="flex items-center gap-3">
-              <p className="text-4xl font-black text-slate-900">{outOfStockCount}</p>
-              {outOfStockCount > 0 && (
-                <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-none font-bold py-1">
-                  Urgent
-                </Badge>
-              )}
-            </div>
-          </div>
-        </div>
+      {/* Minimalist Metrics Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <MetricCard 
+          title="Stock Items" 
+          value={items.length.toString()} 
+          icon={<Package className="h-5 w-5" />}
+          subtitle="Total SKUs tracked"
+        />
+        <MetricCard 
+          title="Low Warning" 
+          value={lowStockCount.toString()} 
+          icon={<AlertTriangle className="h-5 w-5" />}
+          subtitle={lowStockCount > 0 ? "Items need restock" : "All levels optimal"}
+        />
+        <MetricCard 
+          title="Out of Stock" 
+          value={outOfStockCount.toString()} 
+          icon={<XCircle className="h-5 w-5" />}
+          subtitle="Zero quantity"
+        />
       </div>
 
       {/* Main Content Area */}
-      <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
-        <InventoryTable onEditItem={handleEditItem} />
+      <div className="apple-card overflow-hidden bg-white">
+        <div className="p-6 border-b border-slate-50 flex items-center justify-between">
+           <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-xl bg-slate-50 flex items-center justify-center">
+                 <Layers className="h-4 w-4 text-slate-900" />
+              </div>
+              <h3 className="font-semibold text-lg text-slate-900 tracking-tight">Active Ledger</h3>
+           </div>
+        </div>
+        <div className="overflow-x-auto">
+          <InventoryTable onEditItem={handleEditItem} />
+        </div>
       </div>
       
-      {/* Modals */}
       <NewItemModal 
         isOpen={isModalOpen} 
         onClose={handleCloseModal} 
         editItem={selectedItem} 
       />
       <AdjustmentHistoryModal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} />
+    </div>
+  );
+}
+
+// ─── Sub-components ────────────────────────────────────────────────────────
+
+function MetricCard({ title, value, icon, subtitle }: any) {
+  return (
+    <div className="apple-card p-8 bg-white group border border-slate-100/50">
+       <div className="flex justify-between items-start mb-6">
+          <div className="h-12 w-12 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-slate-900 transition-colors">
+             {icon}
+          </div>
+       </div>
+       
+       <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">{title}</p>
+          <h3 className="text-3xl font-semibold text-slate-900 tracking-tight mb-1">{value}</h3>
+          <p className="text-[11px] font-medium text-slate-400">{subtitle}</p>
+       </div>
+    </div>
+  );
+}
+
+function Card({ children, className }: any) {
+  return (
+    <div className={cn("bg-white", className)}>
+      {children}
     </div>
   );
 }

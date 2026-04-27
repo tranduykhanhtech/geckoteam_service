@@ -2,26 +2,32 @@ import { useState, useEffect } from 'react';
 import { usePOSStore } from '../../store/posStore';
 import { useCRMStore } from '../../store/crmStore';
 import { Button } from '../../components/ui/button';
-import { Trash2, Plus, Minus, ShoppingCart, CheckCircle2, Loader2, Banknote, CreditCard, QrCode, User, Search, X, Star } from 'lucide-react';
+import { 
+  Trash2, Plus, Minus, ShoppingCart, CheckCircle2, 
+  Loader2, Banknote, CreditCard, QrCode, User, 
+  Search, X, Star, ChevronRight, Receipt, Wallet
+} from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { Badge } from '../../components/ui/badge';
 
 type PaymentMethod = 'Cash' | 'Card' | 'QR Code';
 
 export function Cart() {
-  const { cart, updateQuantity, removeFromCart, clearCart, getTotal, checkout } = usePOSStore();
-  const { customers, fetchCustomers, recordPurchase } = useCRMStore();
+  const { 
+    cart, updateQuantity, removeFromCart, clearCart, 
+    getSubtotal, getLoyaltyDiscount, getTotal, 
+    checkout, selectedCustomer, setSelectedCustomer,
+    pointsToRedeem, setPointsToRedeem, loyaltyConfig
+  } = usePOSStore();
+  const { customers, fetchCustomers } = useCRMStore();
   
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Cash');
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   
-  // Customer Selection States
   const [customerSearch, setCustomerSearch] = useState('');
-  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [showCustomerSearch, setShowCustomerSearch] = useState(false);
-
-  // Cash Management States
   const [cashReceived, setCashReceived] = useState<string>('');
 
   useEffect(() => {
@@ -29,20 +35,15 @@ export function Cart() {
   }, [fetchCustomers]);
 
   const total = getTotal();
+  const subtotal = getSubtotal();
+  const discount = getLoyaltyDiscount();
   const change = cashReceived ? parseFloat(cashReceived) - total : 0;
 
   const handleCheckout = async () => {
     setIsCheckingOut(true);
     setCheckoutError(null);
-    
     try {
       await checkout();
-      
-      // If a customer is selected, record the purchase for points
-      if (selectedCustomer) {
-        await recordPurchase(selectedCustomer.id, total);
-      }
-      
       setCheckoutSuccess(true);
     } catch (err: any) {
       setCheckoutError(err.message || "Failed to process order.");
@@ -54,8 +55,7 @@ export function Cart() {
   const filteredCustomers = customerSearch.length >= 2 
     ? customers.filter(c => 
         c.full_name.toLowerCase().includes(customerSearch.toLowerCase()) || 
-        c.phone?.includes(customerSearch) ||
-        c.email?.toLowerCase().includes(customerSearch.toLowerCase())
+        c.phone?.includes(customerSearch)
       ).slice(0, 5)
     : [];
 
@@ -65,123 +65,118 @@ export function Cart() {
     setPaymentMethod('Cash');
     setCashReceived('');
     setSelectedCustomer(null);
+    setPointsToRedeem(0);
   };
 
-  // If checkout was successful, show the success screen
   if (checkoutSuccess) {
     return (
-      <div className="w-full md:w-80 lg:w-96 bg-white border-l border-slate-200 flex flex-col h-full shrink-0 items-center justify-center p-6 text-center">
-        <div className="h-20 w-20 bg-emerald-100 rounded-full flex items-center justify-center mb-6">
-          <CheckCircle2 className="h-10 w-10 text-emerald-600" />
+      <div className="w-full h-full bg-white flex flex-col items-center justify-center p-8 text-center animate-in zoom-in duration-500">
+        <div className="mb-8">
+           <div className="h-20 w-20 bg-slate-900 rounded-[28px] flex items-center justify-center shadow-2xl">
+              <CheckCircle2 className="h-10 w-10 text-white" />
+           </div>
         </div>
-        <h2 className="text-2xl font-bold text-slate-900 mb-2">Payment Successful!</h2>
-        <p className="text-slate-500 mb-6">
-          Order has been sent to the kitchen.
-        </p>
         
-        <div className="bg-slate-50 w-full rounded-2xl p-6 mb-8 border border-slate-100">
-          <div className="flex justify-between items-center mb-3 text-xs uppercase font-bold tracking-widest text-slate-400">
-            <span>Payment Summary</span>
+        <h2 className="text-2xl font-semibold text-slate-900 mb-2 tracking-tight">Order Confirmed</h2>
+        <p className="text-slate-400 text-sm font-medium mb-10">Transaction completed successfully.</p>
+        
+        <div className="bg-slate-50 w-full rounded-3xl p-8 mb-10 border border-slate-100 relative">
+          <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white px-4 py-1 rounded-full border border-slate-100 text-[10px] font-semibold text-slate-400 uppercase tracking-widest">
+            Receipt Summary
           </div>
-          <div className="flex justify-between items-center mb-2 text-sm">
-            <span className="text-slate-500">Method</span>
-            <span className="font-bold text-slate-900 bg-slate-200 px-2 py-0.5 rounded text-[10px]">{paymentMethod}</span>
+          <div className="space-y-6">
+             <div className="flex justify-between items-center text-xs">
+                <span className="text-slate-400 font-semibold uppercase tracking-wider">Method</span>
+                <span className="bg-slate-900 text-white px-3 py-1 rounded-lg font-semibold uppercase tracking-wider text-[10px]">{paymentMethod}</span>
+             </div>
+             <div className="flex justify-between items-center py-6 border-y border-slate-200/50">
+                <span className="text-slate-400 font-semibold uppercase tracking-wider text-xs">Total Bill</span>
+                <span className="text-3xl font-semibold text-slate-900 tracking-tight">${total.toFixed(2)}</span>
+             </div>
+             {paymentMethod === 'Cash' && (
+               <div className="flex justify-between items-center">
+                  <span className="text-slate-400 font-semibold uppercase tracking-wider text-xs">Change Back</span>
+                  <span className="text-xl font-semibold text-slate-900 tracking-tight">${change.toFixed(2)}</span>
+               </div>
+             )}
           </div>
-          <div className="flex justify-between items-center text-sm mb-4 pb-4 border-b border-slate-200/60">
-            <span className="text-slate-500">Total Bill</span>
-            <span className="text-xl font-black text-slate-900">${total.toFixed(2)}</span>
-          </div>
-          {paymentMethod === 'Cash' && cashReceived && (
-            <div className="space-y-2">
-              <div className="flex justify-between items-center text-sm text-slate-500">
-                <span>Received</span>
-                <span>${parseFloat(cashReceived).toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-bold text-emerald-600">Change Back</span>
-                <span className="text-2xl font-black text-emerald-600">${change.toFixed(2)}</span>
-              </div>
-            </div>
-          )}
         </div>
 
-        <Button 
-          className="w-full bg-slate-900 text-white hover:bg-slate-800 h-12 text-lg"
+        <button 
+          className="w-full bg-slate-900 hover:bg-slate-800 text-white h-14 rounded-2xl font-semibold text-xs uppercase tracking-[0.2em] transition-all active:scale-[0.98]"
           onClick={handleNewOrder}
         >
           Start New Order
-        </Button>
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden bg-white">
-      {/* Cart Header */}
-      <div className="p-6 border-b border-slate-200/60 flex items-center justify-between bg-white z-20 shadow-sm relative">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 flex items-center tracking-tight">
-            <ShoppingCart className="mr-2 h-6 w-6 text-emerald-500" />
-            Current Order
-          </h2>
-          <p className="text-xs font-medium text-slate-500 mt-0.5 ml-8">
-            {cart.length} {cart.length === 1 ? 'item' : 'items'}
-          </p>
+    <div className="flex flex-col h-full bg-white relative overflow-hidden">
+      {/* Apple Style Cart Header */}
+      <div className="px-6 py-6 border-b border-slate-100 flex items-center justify-between bg-white/80 backdrop-blur-md z-20">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-900">
+             <Receipt className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900 tracking-tight">Active Order</h2>
+            <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+              {cart.length} items added
+            </p>
+          </div>
         </div>
         {cart.length > 0 && (
           <button 
             onClick={clearCart}
-            className="text-xs font-bold text-slate-400 hover:text-red-500 transition-colors uppercase tracking-wider bg-slate-50 hover:bg-red-50 px-3 py-1.5 rounded-full"
+            className="p-2 text-slate-400 hover:text-slate-900 transition-all"
           >
-            Clear
+            <Trash2 className="h-5 w-5" />
           </button>
         )}
       </div>
 
-      {/* Cart Items List */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-3 bg-slate-50/50">
+      {/* Cart Items - Apple Style */}
+      <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50">
         {cart.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-4">
-            <div className="h-24 w-24 rounded-full bg-slate-100 flex items-center justify-center mb-2">
-              <ShoppingCart className="h-10 w-10 text-slate-300" />
-            </div>
-            <p className="font-medium text-slate-500">Scan or tap items to add</p>
+          <div className="h-full flex flex-col items-center justify-center text-slate-300 space-y-4">
+            <ShoppingCart className="h-12 w-12 opacity-20" />
+            <p className="font-medium text-xs uppercase tracking-widest text-slate-400">Cart is Empty</p>
           </div>
         ) : (
           cart.map((item) => (
-            <div key={item.cartItemId} className="group flex flex-col p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 border border-slate-100 relative overflow-hidden">
-              <div className="flex justify-between items-start mb-3">
+            <div key={item.cartItemId} className="apple-card p-5 bg-white border border-slate-100/50">
+              <div className="flex justify-between items-start mb-4">
                 <div className="flex-1 pr-4">
-                  <h4 className="font-bold text-slate-900 text-sm leading-tight mb-0.5">{item.name}</h4>
-                  <p className="text-[11px] font-medium text-slate-400">${Number(item.price).toFixed(2)}</p>
+                  <h4 className="font-semibold text-slate-900 text-sm leading-tight">{item.name}</h4>
+                  <p className="text-[11px] font-medium text-slate-400 mt-1">${Number(item.price).toFixed(2)} each</p>
                 </div>
-                <div className="text-right">
-                  <p className="font-bold text-slate-900 text-base">${(item.price * item.quantity).toFixed(2)}</p>
-                </div>
+                <p className="font-semibold text-slate-900 text-sm">${(item.price * item.quantity).toFixed(2)}</p>
               </div>
 
-              <div className="flex items-center justify-between mt-auto pt-3 border-t border-slate-50">
-                <div className="flex items-center gap-1 bg-slate-50 rounded-full p-1 border border-slate-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1 bg-slate-50 rounded-xl p-1">
                   <button 
                     onClick={() => updateQuantity(item.cartItemId, -1)}
-                    className="h-8 w-8 rounded-full bg-white shadow-sm flex items-center justify-center text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
+                    className="h-7 w-7 rounded-lg bg-white shadow-sm flex items-center justify-center text-slate-600 hover:bg-slate-900 hover:text-white transition-all"
                   >
-                    <Minus className="h-4 w-4" />
+                    <Minus className="h-3 w-3" />
                   </button>
-                  <span className="w-10 text-center font-bold text-slate-900">{item.quantity}</span>
+                  <span className="w-8 text-center font-semibold text-slate-900 text-xs">{item.quantity}</span>
                   <button 
                     onClick={() => updateQuantity(item.cartItemId, 1)}
-                    className="h-8 w-8 rounded-full bg-white shadow-sm flex items-center justify-center text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
+                    className="h-7 w-7 rounded-lg bg-white shadow-sm flex items-center justify-center text-slate-600 hover:bg-slate-900 hover:text-white transition-all"
                   >
-                    <Plus className="h-4 w-4" />
+                    <Plus className="h-3 w-3" />
                   </button>
                 </div>
                 
                 <button 
                   onClick={() => removeFromCart(item.cartItemId)}
-                  className="h-9 w-9 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                  className="text-[10px] font-semibold text-slate-400 hover:text-slate-900 uppercase tracking-wider transition-colors"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  Remove
                 </button>
               </div>
             </div>
@@ -189,88 +184,87 @@ export function Cart() {
         )}
       </div>
 
-      {/* Checkout Panel */}
-      <div className="border-t border-slate-200/60 bg-white p-4 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)] relative z-20">
+      {/* Checkout Section - Apple Style */}
+      <div className="bg-white border-t border-slate-100 p-6 space-y-6">
         
-        {/* Customer Selection */}
-        <div className="mb-4">
+        {/* Customer Selector */}
+        <div className="relative">
           {selectedCustomer ? (
-            <div className="flex items-center justify-between p-2 bg-emerald-50 border border-emerald-100 rounded-xl">
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-full bg-emerald-500 flex items-center justify-center text-white">
-                  <User className="h-4 w-4" />
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center border border-slate-100">
+                    <User className="h-5 w-5 text-slate-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900 leading-none">{selectedCustomer.full_name}</p>
+                    <p className="text-[11px] font-medium text-slate-400 mt-1.5">{selectedCustomer.points || 0} Points</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-900 leading-none">{selectedCustomer.full_name}</p>
-                  <p className="text-[10px] text-emerald-600 font-bold mt-1 flex items-center gap-1">
-                    <Star className="h-2 w-2 fill-emerald-600" />
-                    {selectedCustomer.points || 0} pts
-                  </p>
+                <button onClick={() => setSelectedCustomer(null)} className="p-2 text-slate-400 hover:text-slate-900">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Point Redemption */}
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Redeem Points</span>
+                  <span className="text-[11px] font-semibold text-slate-900">Max: {selectedCustomer.points || 0}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <input 
+                    type="number"
+                    max={selectedCustomer.points || 0}
+                    min={0}
+                    className="w-full bg-white border border-slate-200 rounded-xl h-10 px-4 font-semibold text-slate-900 outline-none focus:ring-2 focus:ring-slate-100 text-sm"
+                    placeholder="Enter points..."
+                    value={pointsToRedeem}
+                    onChange={(e) => {
+                      const val = Math.min(parseInt(e.target.value) || 0, selectedCustomer.points || 0);
+                      setPointsToRedeem(val);
+                    }}
+                  />
+                  <div className="shrink-0 font-semibold text-slate-900 text-xs">
+                    -${discount.toFixed(2)}
+                  </div>
                 </div>
               </div>
-              <button 
-                onClick={() => setSelectedCustomer(null)}
-                className="p-1 hover:bg-emerald-100 rounded-full text-emerald-600 transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
             </div>
           ) : (
             <div className="relative">
               {!showCustomerSearch ? (
                 <button 
                   onClick={() => setShowCustomerSearch(true)}
-                  className="w-full flex items-center justify-between p-2 text-slate-500 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-100 transition-all text-xs font-bold"
+                  className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl text-slate-500 transition-all border border-slate-200 border-dashed"
                 >
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    Add Customer for Points
-                  </div>
-                  <Plus className="h-3 w-3" />
+                  <span className="text-[11px] font-semibold uppercase tracking-wider flex items-center gap-2">
+                    <User className="h-4 w-4 opacity-50" /> Add Member
+                  </span>
+                  <Plus className="h-4 w-4 opacity-50" />
                 </button>
               ) : (
-                <div className="space-y-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-                    <input 
-                      autoFocus
-                      className="w-full pl-9 pr-8 h-9 text-xs border rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
-                      placeholder="Search phone or name..."
-                      value={customerSearch}
-                      onChange={(e) => setCustomerSearch(e.target.value)}
-                    />
-                    <button 
-                      onClick={() => {
-                        setShowCustomerSearch(false);
-                        setCustomerSearch('');
-                      }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                  
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input 
+                    autoFocus
+                    className="w-full pl-11 pr-10 h-12 bg-white border border-slate-900 rounded-2xl outline-none font-medium text-sm"
+                    placeholder="Search phone..."
+                    value={customerSearch}
+                    onChange={(e) => setCustomerSearch(e.target.value)}
+                  />
+                  <button onClick={() => setShowCustomerSearch(false)} className="absolute right-4 top-1/2 -translate-y-1/2">
+                    <X className="h-4 w-4 text-slate-400" />
+                  </button>
                   {filteredCustomers.length > 0 && (
-                    <div className="absolute bottom-full left-0 right-0 mb-2 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden divide-y divide-slate-50 animate-in slide-in-from-bottom-2 duration-200">
+                    <div className="absolute bottom-full left-0 right-0 mb-3 bg-white border border-slate-100 rounded-[24px] shadow-2xl overflow-hidden z-50">
                       {filteredCustomers.map(c => (
-                        <button
-                          key={c.id}
-                          onClick={() => {
-                            setSelectedCustomer(c);
-                            setShowCustomerSearch(false);
-                            setCustomerSearch('');
-                          }}
-                          className="w-full p-3 text-left hover:bg-emerald-50 transition-colors group"
-                        >
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <p className="text-xs font-bold text-slate-900 group-hover:text-emerald-700">{c.full_name}</p>
-                              <p className="text-[10px] text-slate-500">{c.phone || c.email || 'No contact'}</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-[10px] font-black text-emerald-600">{c.points || 0} pts</p>
-                            </div>
+                        <button key={c.id} onClick={() => { setSelectedCustomer(c); setShowCustomerSearch(false); }} className="w-full p-4 text-left hover:bg-slate-50 flex justify-between items-center group">
+                          <div>
+                            <p className="font-semibold text-slate-900">{c.full_name}</p>
+                            <p className="text-[11px] text-slate-400">{c.phone}</p>
                           </div>
+                          <ChevronRight className="h-4 w-4 text-slate-300" />
                         </button>
                       ))}
                     </div>
@@ -281,115 +275,87 @@ export function Cart() {
           )}
         </div>
 
-        {/* Payment Methods */}
-        <div className="mb-4">
-          <div className="grid grid-cols-3 gap-1.5 p-1.5 bg-slate-100 rounded-xl">
-            {([
-              { id: 'Cash', icon: Banknote },
-              { id: 'Card', icon: CreditCard },
-              { id: 'QR Code', icon: QrCode },
-            ] as const).map(({ id, icon: Icon }) => (
+        {/* Payment Methods - Apple Style Tiles */}
+        <div className="grid grid-cols-3 gap-3">
+          {(['Cash', 'Card', 'QR Code'] as const).map((method) => {
+            const Icon = method === 'Cash' ? Banknote : method === 'Card' ? CreditCard : QrCode;
+            return (
               <button
-                key={id}
-                onClick={() => {
-                  setPaymentMethod(id);
-                  if (id !== 'Cash') setCashReceived('');
-                }}
+                key={method}
+                onClick={() => { setPaymentMethod(method); if (method !== 'Cash') setCashReceived(''); }}
                 className={cn(
-                  "py-2 flex items-center justify-center gap-2 rounded-lg text-[11px] font-black transition-all duration-300 uppercase tracking-tight",
-                  paymentMethod === id
-                    ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200/50"
-                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+                  "flex flex-col items-center gap-2 py-3 rounded-2xl transition-all duration-300 border",
+                  paymentMethod === method
+                    ? "bg-slate-900 border-slate-900 text-white shadow-lg"
+                    : "bg-white border-slate-100 text-slate-400 hover:border-slate-200"
                 )}
               >
-                <Icon className={cn("h-4 w-4", paymentMethod === id ? "text-emerald-500" : "text-slate-400")} />
-                {id}
+                <Icon className={cn("h-5 w-5", paymentMethod === method ? "text-white" : "text-slate-300")} />
+                <span className="text-[10px] font-semibold uppercase tracking-wider">{method}</span>
               </button>
-            ))}
-          </div>
+            );
+          })}
         </div>
 
-        {/* Cash Input & Change (Only for Cash) */}
+        {/* Cash Input Area */}
         {paymentMethod === 'Cash' && (
-          <div className="mb-4 space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
-            <div className="flex items-center gap-3">
-              <div className="flex-1">
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Cash Received</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
-                  <input
-                    type="number"
-                    className="w-full pl-7 pr-3 h-10 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none font-bold text-slate-900"
-                    placeholder="0.00"
-                    value={cashReceived}
-                    onChange={(e) => setCashReceived(e.target.value)}
-                  />
+          <div className="space-y-4 animate-in fade-in duration-300">
+             <div className="flex items-center gap-3">
+                <div className="flex-1 space-y-2">
+                   <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest pl-1">Received</label>
+                   <input 
+                     type="number"
+                     className="w-full px-4 h-11 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-slate-400 font-semibold text-base"
+                     placeholder="0.00"
+                     value={cashReceived}
+                     onChange={(e) => setCashReceived(e.target.value)}
+                   />
                 </div>
-              </div>
-              <div className="flex-1">
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Change</label>
-                <div className={cn(
-                  "h-10 px-3 flex items-center justify-end rounded-xl font-black text-lg border",
-                  change >= 0 ? "bg-emerald-50 border-emerald-100 text-emerald-600" : "bg-red-50 border-red-100 text-red-600"
-                )}>
-                  ${Math.abs(change).toFixed(2)}
+                <div className="flex-1 space-y-2">
+                   <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest pl-1">Change</label>
+                   <div className={cn(
+                     "h-11 flex items-center justify-end px-4 rounded-xl font-semibold text-lg border",
+                     change >= 0 ? "bg-white border-slate-100 text-slate-900" : "bg-white border-rose-100 text-rose-500"
+                   )}>
+                      ${Math.abs(change).toFixed(2)}
+                   </div>
                 </div>
-              </div>
-            </div>
-
-            {/* Quick Cash Buttons */}
-            <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
-              {[Math.ceil(total), 5, 10, 20, 50, 100].map((amount) => (
-                <button
-                  key={amount}
-                  onClick={() => setCashReceived(amount.toString())}
-                  className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-500 hover:text-white text-[11px] font-bold text-slate-600 transition-all border border-slate-200/50 hover:border-emerald-500 shadow-sm"
-                >
-                  ${amount}
-                </button>
-              ))}
-            </div>
+             </div>
           </div>
         )}
 
-        {/* Totals */}
-        <div className="space-y-1 mb-3">
-          <div className="flex justify-between items-end pt-1">
-            <span className="text-sm font-bold text-slate-900">Total</span>
-            <span className="text-[25px] font-extrabold tracking-tight text-slate-900 leading-none">${total.toFixed(2)}</span>
+        {/* Totals & Complete Button */}
+        <div className="space-y-4">
+          <div className="space-y-2 pt-2">
+             <div className="flex justify-between items-center text-slate-400 font-medium text-xs">
+                <span>Subtotal</span>
+                <span>${subtotal.toFixed(2)}</span>
+             </div>
+             {discount > 0 && (
+               <div className="flex justify-between items-center text-slate-900 font-medium text-xs">
+                  <span>Loyalty Discount</span>
+                  <span>-${discount.toFixed(2)}</span>
+               </div>
+             )}
           </div>
-        </div>
-
-        {checkoutError && (
-          <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-xl border border-red-100 font-medium text-center">
-            {checkoutError}
-          </div>
-        )}
-
-        {/* Checkout Button */}
-        <button 
-          onClick={handleCheckout}
-          disabled={cart.length === 0 || isCheckingOut || (paymentMethod === 'Cash' && (!cashReceived || parseFloat(cashReceived) < total))}
-          className="w-full relative group overflow-hidden rounded-xl p-0.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-emerald-500/20"
-        >
-          {/* Gradient Border/Glow effect */}
-          <span className="absolute inset-0 bg-gradient-to-r from-emerald-400 via-teal-500 to-emerald-600 rounded-xl opacity-70 group-hover:opacity-100 transition-opacity duration-300"></span>
           
-          <div className="relative bg-gradient-to-r from-emerald-500 to-teal-600 rounded-[10px] px-4 py-3 flex items-center justify-center gap-3 transition-transform duration-300 group-active:scale-[0.98]">
-            {isCheckingOut ? (
-              <Loader2 className="h-5 w-5 animate-spin text-white" />
-            ) : (
-              <>
-                <span className="text-lg font-black text-white tracking-wide uppercase">
-                  {paymentMethod === 'Cash' && cashReceived ? 'Finish Order' : `Pay $${total.toFixed(2)}`}
-                </span>
-                <div className="h-5 w-5 rounded-full bg-white/20 flex items-center justify-center">
-                  <CheckCircle2 className="h-4 w-4 text-white" />
-                </div>
-              </>
-            )}
+          <div className="flex justify-between items-end pb-2">
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Amount</span>
+            <span className="text-4xl font-semibold text-slate-900 tracking-tight">${total.toFixed(2)}</span>
           </div>
-        </button>
+
+          <button 
+            onClick={handleCheckout}
+            disabled={cart.length === 0 || isCheckingOut || (paymentMethod === 'Cash' && (!cashReceived || parseFloat(cashReceived) < total))}
+            className="apple-btn-primary w-full h-14 text-base uppercase tracking-widest disabled:opacity-50 disabled:bg-slate-200 disabled:text-slate-400"
+          >
+            {isCheckingOut ? (
+              <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+            ) : (
+              "Complete Payment"
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

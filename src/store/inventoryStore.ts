@@ -74,6 +74,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
             name
           )
         `)
+        .eq('company_id', useAuthStore.getState().profile?.company_id)
         .order('name');
 
       if (error) throw error;
@@ -103,6 +104,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
       const { data, error } = await supabase
         .from('inventory_categories')
         .select('id, name')
+        .eq('company_id', useAuthStore.getState().profile?.company_id)
         .order('name');
       
       if (error) throw error;

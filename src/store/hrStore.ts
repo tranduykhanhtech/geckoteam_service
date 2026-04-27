@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
+import { useAuthStore } from './authStore';
 
 export interface EmployeeProfile {
   id: string;
@@ -30,9 +31,11 @@ export const useHRStore = create<HRState>((set) => ({
   fetchEmployees: async () => {
     set({ isLoading: true, error: null });
     try {
+      const companyId = useAuthStore.getState().profile?.company_id;
       const { data, error } = await supabase
         .from('profiles')
         .select('id, staff_code, full_name, email, role, is_active, created_at')
+        .eq('company_id', companyId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

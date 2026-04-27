@@ -136,54 +136,56 @@ export function AddProductForm({ categories: initialCategories, onSuccess }: Add
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-6">
       {msg && (
         <div className={cn(
-          'text-xs px-3 py-2 rounded-md flex items-start gap-2',
-          msg.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'
+          'text-[10px] font-semibold uppercase tracking-wider px-6 py-4 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300 shadow-sm border',
+          msg.type === 'success' 
+            ? 'bg-white text-slate-900 border-slate-100' 
+            : 'bg-rose-50 text-rose-600 border-rose-100'
         )}>
           {msg.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertTriangle className="h-4 w-4 shrink-0" />}
           {msg.text}
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">Item Name</label>
+      <div className="grid grid-cols-2 gap-6">
+        <div className="space-y-3">
+          <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider pl-1">Item Name</label>
           <input
             required
             type="text"
             placeholder="e.g. Espresso"
             value={name}
             onChange={e => setName(e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-400"
+            className="w-full px-4 h-12 bg-slate-50 border border-transparent rounded-xl focus:bg-white focus:border-slate-900 outline-none transition-all font-semibold text-slate-900 text-sm"
           />
         </div>
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">Price ($)</label>
+        <div className="space-y-3">
+          <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider pl-1">Price ($)</label>
           <input
             required
             type="number"
             step="0.01"
             min="0"
-            placeholder="e.g. 4.50"
+            placeholder="0.00"
             value={price}
             onChange={e => setPrice(e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-400"
+            className="w-full px-4 h-12 bg-slate-50 border border-transparent rounded-xl focus:bg-white focus:border-slate-900 outline-none transition-all font-semibold text-slate-900 text-sm"
           />
         </div>
       </div>
 
-      <div className="space-y-2">
-        <label className="block text-xs font-semibold text-slate-700 mb-1">Category</label>
-        <div className="flex gap-2">
+      <div className="space-y-3">
+        <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider pl-1">Category</label>
+        <div className="flex gap-3">
           <select
             value={categoryId}
             onChange={e => setCategoryId(e.target.value)}
-            className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+            className="flex-1 px-4 h-12 bg-slate-50 border border-transparent rounded-xl focus:bg-white focus:border-slate-900 outline-none transition-all font-semibold text-slate-900 text-sm appearance-none"
           >
             <option value="">
-              {localCategories.length === 0 ? 'No categories yet — create one ↓' : 'Select category…'}
+              {localCategories.length === 0 ? 'No categories yet' : 'Select category…'}
             </option>
             {localCategories.map(cat => (
               <option key={cat.id} value={cat.id}>{cat.name}</option>
@@ -193,10 +195,10 @@ export function AddProductForm({ categories: initialCategories, onSuccess }: Add
             type="button"
             onClick={() => { setShowNewCat(v => !v); setCatMsg(null); }}
             className={cn(
-              'px-3 py-2 rounded-md border text-sm font-semibold transition-colors flex items-center gap-1 whitespace-nowrap',
+              'px-6 h-12 rounded-xl text-[10px] font-semibold uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap',
               showNewCat
-                ? 'bg-amber-500 border-amber-500 text-white'
-                : 'bg-white border-slate-200 text-slate-600 hover:border-amber-400 hover:text-amber-600'
+                ? 'bg-slate-900 text-white'
+                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
             )}
           >
             <Plus className="h-4 w-4" />
@@ -205,113 +207,122 @@ export function AddProductForm({ categories: initialCategories, onSuccess }: Add
         </div>
 
         {showNewCat && (
-          <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mt-2 space-y-2">
-            <p className="text-[11px] font-semibold text-amber-800 uppercase tracking-wide">New Category</p>
+          <div className="bg-slate-50 rounded-2xl p-4 mt-3 space-y-4 border border-slate-100">
+            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Create New Category</p>
             {catMsg && (
               <div className={cn(
-                'text-xs px-2 py-1.5 rounded flex items-center gap-1.5',
-                catMsg.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
+                'text-[10px] font-semibold uppercase tracking-wider px-3 py-2 rounded-xl flex items-center gap-2',
+                catMsg.type === 'success' ? 'bg-white text-slate-900 border border-slate-100' : 'bg-rose-50 text-rose-600'
               )}>
                 {catMsg.type === 'success' ? <CheckCircle2 className="h-3 w-3 shrink-0" /> : <AlertTriangle className="h-3 w-3 shrink-0" />}
                 {catMsg.text}
               </div>
             )}
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <input
                 type="text"
-                placeholder="e.g. Coffee, Snacks…"
+                placeholder="Category name…"
                 value={newCatName}
                 onChange={e => setNewCatName(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleCreateCategory())}
-                className="flex-1 px-3 py-1.5 text-sm border border-amber-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+                className="flex-1 px-4 h-10 bg-white border border-transparent rounded-xl focus:border-slate-900 outline-none transition-all font-semibold text-slate-900 text-sm"
                 autoFocus
               />
               <button
                 type="button"
                 onClick={handleCreateCategory}
                 disabled={catLoading || !newCatName.trim()}
-                className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-md text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-1"
+                className="px-4 h-10 bg-slate-900 text-white rounded-xl text-xs font-semibold transition-all disabled:opacity-50"
               >
-                {catLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                {catLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create'}
               </button>
             </div>
           </div>
         )}
       </div>
 
-      <div className="space-y-3 pt-4 border-t border-slate-100">
+      <div className="space-y-4 pt-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-bold text-slate-700">Recipe / Ingredients</p>
-            <p className="text-xs text-slate-500">Link inventory items to auto-deduct stock on sale.</p>
+            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider pl-1">Recipe / Ingredients</p>
           </div>
           <button 
             type="button" 
             onClick={addRecipeRow}
-            className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-md font-semibold transition-colors flex items-center gap-1"
+            className="text-[10px] font-semibold uppercase tracking-wider bg-slate-100 text-slate-500 px-4 py-2 rounded-xl hover:bg-slate-200 transition-all flex items-center gap-2"
           >
-            <Plus className="h-3 w-3" /> Add Ingredient
+            <Plus className="h-3 w-3" /> Add Item
           </button>
         </div>
         
-        {recipe.length === 0 && (
-          <div className="bg-slate-50 border border-dashed border-slate-200 rounded-md p-4 text-center">
-            <p className="text-sm text-slate-500 italic">No ingredients linked. Stock won't be auto-deducted.</p>
+        {recipe.length === 0 ? (
+          <div className="bg-slate-50/50 border border-dashed border-slate-200 rounded-2xl p-8 text-center">
+            <p className="text-xs text-slate-400 font-medium">Link inventory items to auto-deduct stock on sale.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {recipe.map((row, index) => (
+              <div key={index} className="flex gap-3 items-center animate-in fade-in slide-in-from-right-4 duration-300">
+                <select
+                  required
+                  value={row.inventory_item_id}
+                  onChange={(e) => updateRecipeRow(index, 'inventory_item_id', e.target.value)}
+                  className="flex-1 px-4 h-12 bg-slate-50 border border-transparent rounded-xl focus:bg-white focus:border-slate-900 outline-none transition-all font-semibold text-slate-900 text-sm appearance-none"
+                >
+                  <option value="">Select Inventory Item</option>
+                  {inventoryItems.map(item => (
+                    <option key={item.id} value={item.id}>{item.name}</option>
+                  ))}
+                </select>
+                <div className="flex items-center gap-1.5 bg-slate-50 rounded-xl px-2">
+                  <input
+                    required
+                    type="number"
+                    step="any"
+                    placeholder="0"
+                    value={row.quantity}
+                    onChange={(e) => updateRecipeRow(index, 'quantity', e.target.value)}
+                    className="w-16 h-12 bg-transparent border-none focus:ring-0 outline-none font-semibold text-slate-900 text-sm text-center"
+                  />
+                  <select
+                    value={row.unit}
+                    onChange={(e) => updateRecipeRow(index, 'unit', e.target.value)}
+                    className="text-[10px] font-semibold uppercase tracking-wider bg-white text-slate-500 px-3 py-1 rounded-lg border-none focus:ring-0 outline-none cursor-pointer"
+                  >
+                    <option value="g">g</option>
+                    <option value="ml">ml</option>
+                    <option value="kg">kg</option>
+                    <option value="l">L</option>
+                    <option value="pcs">pcs</option>
+                  </select>
+                </div>
+                <button 
+                  type="button" 
+                  onClick={() => removeRecipeRow(index)}
+                  className="p-3 text-slate-400 hover:text-rose-500 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
           </div>
         )}
-
-        <div className="space-y-2">
-          {recipe.map((row, index) => (
-            <div key={index} className="flex gap-3 items-center">
-              <select
-                required
-                value={row.inventory_item_id}
-                onChange={(e) => updateRecipeRow(index, 'inventory_item_id', e.target.value)}
-                className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
-              >
-                <option value="">Select Inventory Item</option>
-                {inventoryItems.map(item => (
-                  <option key={item.id} value={item.id}>{item.name}</option>
-                ))}
-              </select>
-              <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-md p-1 shadow-sm">
-                <input
-                  required
-                  type="number"
-                  step="any"
-                  placeholder="0"
-                  value={row.quantity}
-                  onChange={(e) => updateRecipeRow(index, 'quantity', e.target.value)}
-                  className="w-16 px-2 py-1 text-sm border-none focus:ring-0 outline-none font-bold text-slate-900"
-                />
-                <select
-                  value={row.unit}
-                  onChange={(e) => updateRecipeRow(index, 'unit', e.target.value)}
-                  className="text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-600 px-2 py-1 rounded border-none focus:ring-0 outline-none cursor-pointer hover:bg-slate-200 transition-colors"
-                >
-                  <option value="g">g</option>
-                  <option value="ml">ml</option>
-                  <option value="kg">kg</option>
-                  <option value="l">L</option>
-                  <option value="pcs">pcs</option>
-                </select>
-              </div>
-              <button 
-                type="button" 
-                onClick={() => removeRecipeRow(index)}
-                className="p-2 text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-md transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          ))}
-        </div>
       </div>
 
-      <div className="pt-4 border-t border-slate-100">
-        <Button type="submit" disabled={loading} className="w-full bg-amber-500 hover:bg-amber-600 text-white h-10">
-          {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Plus className="h-5 w-5 mr-2" />Save Menu Item</>}
-        </Button>
+      <div className="pt-6">
+        <button 
+          type="submit" 
+          disabled={loading} 
+          className="w-full bg-slate-900 hover:bg-slate-800 text-white h-12 rounded-xl font-semibold text-xs uppercase tracking-widest transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+        >
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <>
+              <Plus className="h-4 w-4" />
+              Save Catalog Item
+            </>
+          )}
+        </button>
       </div>
     </form>
   );

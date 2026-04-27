@@ -34,9 +34,11 @@ export const useCRMStore = create<CRMState>((set, get) => ({
   fetchCustomers: async () => {
     set({ isLoading: true, error: null });
     try {
+      const companyId = useAuthStore.getState().profile?.company_id;
       const { data, error } = await supabase
         .from('customers')
         .select('*')
+        .eq('company_id', companyId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

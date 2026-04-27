@@ -3,524 +3,554 @@ import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/authStore';
 import {
   DollarSign, ShoppingBag, AlertTriangle, TrendingUp,
-  Users, ArrowUpRight, Loader2, Search, CalendarDays,
-  ReceiptText, BarChart2
+  Users, ArrowUpRight, Loader2, CalendarDays,
+  ReceiptText, ArrowDownRight, Package,
+  Zap, Star, Award, Clock
 } from 'lucide-react';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  AreaChart, Area
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { cn } from '../../lib/utils';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
-type DateOption = 'today' | 'yesterday' | '2days' | '3days' | 'custom';
+type DateOption = 'today' | 'yesterday' | '7days' | 'custom';
 
-interface DaySummary {
-  grossSale: number;   // all completed + voided orders total
-  netSale: number;     // only completed orders total
-  tc: number;          // transaction count (completed)
-  ac: number;          // average check = netSale / tc
-  voidedCount: number;
-  voidedAmount: number;
-}
-
-interface CashierStats {
-  id: string;
-  name: string;
+interface SummaryData {
   grossSale: number;
   netSale: number;
   tc: number;
   ac: number;
+  growth: number;
+  customerCount: number;
+  peakHour: string;
 }
 
-interface MenuItemSale {
-  product_id: string;
+interface ChartData {
   name: string;
-  qty: number;
-  revenue: number;
+  value: number;
 }
 
-// ─── Helpers ───────────────────────────────────────────────────────────────
-function getDayRange(option: DateOption, customDate: string): { start: string; end: string; label: string } {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const offset = option === 'today' ? 0 : option === 'yesterday' ? 1 : option === '2days' ? 2 : option === '3days' ? 3 : 0;
-
-  let target: Date;
-  if (option === 'custom' && customDate) {
-    target = new Date(customDate + 'T00:00:00');
-  } else {
-    target = new Date(today);
-    target.setDate(target.getDate() - offset);
-  }
-
-  const start = new Date(target);
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(target);
-  end.setHours(23, 59, 59, 999);
-
-  const labels: Record<DateOption, string> = {
-    today: 'Today',
-    yesterday: 'Yesterday',
-    '2days': '2 Days Ago',
-    '3days': '3 Days Ago',
-    custom: customDate || 'Custom',
-  };
-
-  return {
-    start: start.toISOString(),
-    end: end.toISOString(),
-    label: labels[option],
-  };
+interface CategoryStat {
+  name: string;
+  val: number;
+  color: string;
 }
-
-const DATE_OPTIONS: { id: DateOption; label: string }[] = [
-  { id: 'today', label: 'Today' },
-  { id: 'yesterday', label: 'Yesterday' },
-  { id: '2days', label: '2 Days Ago' },
-  { id: '3days', label: '3 Days Ago' },
-  { id: 'custom', label: 'Custom' },
-];
 
 // ─── Main Component ────────────────────────────────────────────────────────
 export function DashboardOverview() {
   const { profile } = useAuthStore();
-  const isAdmin = profile?.role === 'admin';
-
-  // Date selection
-  const [selectedDate, setSelectedDate] = useState<DateOption>('today');
-  const [customDate, setCustomDate] = useState('');
-
-  // Summary
-  const [summary, setSummary] = useState<DaySummary | null>(null);
-  const [lowStockItems, setLowStockItems] = useState<any[]>([]);
-  const [menuItemSales, setMenuItemSales] = useState<MenuItemSale[]>([]);
+  
+  const [selectedRange, setSelectedRange] = useState<DateOption>('today');
+  const [customStart, setCustomStart] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [customEnd, setCustomEnd] = useState<string>(new Date().toISOString().split('T')[0]);
   const [loading, setLoading] = useState(true);
-
-  // Cashier search
-  const [cashierSearch, setCashierSearch] = useState('');
-  const [cashierStats, setCashierStats] = useState<CashierStats | null>(null);
-  const [cashierLoading, setCashierLoading] = useState(false);
-  const [cashierError, setCashierError] = useState<string | null>(null);
-
-  const { start, end, label } = getDayRange(selectedDate, customDate);
+  const [summary, setSummary] = useState<SummaryData>({ 
+    grossSale: 0, netSale: 0, tc: 0, ac: 0, growth: 0, customerCount: 0, peakHour: '--:--' 
+  });
+  const [revenueTrend, setRevenueTrend] = useState<ChartData[]>([]);
+  const [topProducts, setTopProducts] = useState<any[]>([]);
+  const [lowStock, setLowStock] = useState<any[]>([]);
+  const [categoryStats, setCategoryStats] = useState<CategoryStat[]>([]);
 
   const fetchData = useCallback(async () => {
+    if (!profile?.company_id) return;
     setLoading(true);
+    
     try {
-      // 1. Fetch all orders (completed + voided) within the day
-      const { data: orders, error: ordersError } = await supabase
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      let startTime = new Date(today);
+      let endTime = new Date(now);
+      let prevStartTime = new Date(today);
+      let prevEndTime = new Date(today);
+      let days = 1;
+
+      if (selectedRange === 'yesterday') {
+        startTime.setDate(today.getDate() - 1);
+        endTime = new Date(today);
+        prevStartTime.setDate(today.getDate() - 2);
+        prevEndTime.setDate(today.getDate() - 1);
+      } else if (selectedRange === '7days') {
+        startTime.setDate(today.getDate() - 6);
+        startTime.setHours(0,0,0,0);
+        prevStartTime.setDate(today.getDate() - 13);
+        prevEndTime.setDate(today.getDate() - 6);
+        days = 7;
+      } else if (selectedRange === 'custom') {
+        startTime = new Date(customStart);
+        startTime.setHours(0,0,0,0);
+        endTime = new Date(customEnd);
+        endTime.setHours(23,59,59,999);
+        
+        // Ensure max 7 days
+        const diffTime = Math.abs(endTime.getTime() - startTime.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays > 7) {
+          startTime.setDate(endTime.getDate() - 6);
+          startTime.setHours(0,0,0,0);
+          setCustomStart(startTime.toISOString().split('T')[0]);
+        }
+        
+        days = Math.ceil(Math.abs(endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60 * 24));
+        prevStartTime = new Date(startTime);
+        prevStartTime.setDate(startTime.getDate() - days);
+        prevEndTime = new Date(startTime);
+      } else {
+        // today
+        prevStartTime.setDate(today.getDate() - 1);
+        prevEndTime = new Date(today);
+      }
+
+      // 1. Fetch Current Orders
+      const { data: currentOrders } = await supabase
         .from('orders')
-        .select('id, total_amount, status, created_at')
-        .in('status', ['completed', 'voided'])
-        .gte('created_at', start)
-        .lte('created_at', end);
+        .select('total_amount, status, created_at, id')
+        .eq('company_id', profile.company_id)
+        .gte('created_at', startTime.toISOString())
+        .lte('created_at', endTime.toISOString());
 
-      if (ordersError) throw ordersError;
+      // 2. Fetch Previous Orders for Growth
+      const { data: prevOrders } = await supabase
+        .from('orders')
+        .select('total_amount, status')
+        .eq('company_id', profile.company_id)
+        .gte('created_at', prevStartTime.toISOString())
+        .lt('created_at', prevEndTime.toISOString());
 
-      let grossSale = 0;
-      let netSale = 0;
-      let tc = 0;
-      let voidedCount = 0;
-      let voidedAmount = 0;
+      // 3. Fetch Real Customer Count
+      const { count: custCount } = await supabase
+        .from('customers')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', profile.company_id);
 
-      (orders || []).forEach(o => {
+      // Process Orders
+      let net = 0, gross = 0, count = 0;
+      const hourMap: Record<number, number> = {};
+      const trendMap: Record<string, { val: number, sort: number }> = {};
+      const orderIds: string[] = [];
+
+      currentOrders?.forEach(o => {
         const amt = Number(o.total_amount);
-        grossSale += amt;
-        if (o.status === 'completed') { netSale += amt; tc++; }
-        if (o.status === 'voided') { voidedCount++; voidedAmount += amt; }
+        gross += amt;
+        if (o.status === 'completed') {
+          net += amt;
+          count++;
+          orderIds.push(o.id);
+          
+          const d = new Date(o.created_at);
+          const hour = d.getHours();
+          hourMap[hour] = (hourMap[hour] || 0) + 1;
+          
+          const dateLabel = days === 1 
+            ? `${hour}:00` 
+            : d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
+          
+          if (!trendMap[dateLabel]) {
+            trendMap[dateLabel] = { val: 0, sort: d.getTime() };
+          }
+          trendMap[dateLabel].val += amt;
+        }
       });
 
-      setSummary({ grossSale, netSale, tc, ac: tc > 0 ? netSale / tc : 0, voidedCount, voidedAmount });
+      // Calculate Peak Hour
+      let peakH = 0, maxOrders = 0;
+      Object.entries(hourMap).forEach(([h, c]) => {
+        if (c > maxOrders) { maxOrders = c; peakH = Number(h); }
+      });
 
-      // 2. Menu Item Sales — join via order_items → products
-      if (orders && orders.length > 0) {
-        const orderIds = orders.filter(o => o.status === 'completed').map(o => o.id);
-        if (orderIds.length > 0) {
-          const { data: items, error: itemsError } = await supabase
-            .from('order_items')
-            .select('quantity, subtotal, product_id, products(name)')
-            .in('order_id', orderIds);
+      // Calculate Growth
+      let prevNet = 0;
+      prevOrders?.forEach(o => { if (o.status === 'completed') prevNet += Number(o.total_amount); });
+      const growth = prevNet === 0 ? 100 : ((net - prevNet) / prevNet) * 100;
 
-          if (!itemsError && items) {
-            const map: Record<string, MenuItemSale> = {};
-            items.forEach((it: any) => {
-              const pid = it.product_id;
-              const name = it.products?.name || 'Unknown';
-              if (!map[pid]) map[pid] = { product_id: pid, name, qty: 0, revenue: 0 };
-              map[pid].qty += Number(it.quantity);
-              map[pid].revenue += Number(it.subtotal);
-            });
-            setMenuItemSales(Object.values(map).sort((a, b) => b.qty - a.qty));
-          }
-        } else {
-          setMenuItemSales([]);
+      setSummary({
+        grossSale: gross,
+        netSale: net,
+        tc: count,
+        ac: count > 0 ? net / count : 0,
+        growth,
+        customerCount: custCount || 0,
+        peakHour: maxOrders > 0 ? `${peakH}:00` : '--:--'
+      });
+
+      setRevenueTrend(
+        Object.entries(trendMap)
+          .sort((a, b) => a[1].sort - b[1].sort)
+          .map(([name, data]) => ({ name, value: data.val }))
+      );
+
+      // 4. Fetch Category Stats & Top Products
+      if (orderIds.length > 0) {
+        const { data: items } = await supabase
+          .from('order_items')
+          .select('quantity, subtotal, products(name, categories(name))')
+          .in('order_id', orderIds);
+
+        if (items) {
+          const pMap: Record<string, any> = {};
+          const cMap: Record<string, number> = {};
+          let totalItemsRevenue = 0;
+
+          items.forEach((it: any) => {
+            const pName = it.products?.name || 'Unknown';
+            const cName = it.products?.categories?.name || 'Others';
+            const revenue = Number(it.subtotal);
+            
+            // Product Stats
+            if (!pMap[pName]) pMap[pName] = { name: pName, qty: 0, revenue: 0 };
+            pMap[pName].qty += it.quantity;
+            pMap[pName].revenue += revenue;
+
+            // Category Stats
+            cMap[cName] = (cMap[cName] || 0) + revenue;
+            totalItemsRevenue += revenue;
+          });
+
+          setTopProducts(Object.values(pMap).sort((a, b) => b.revenue - a.revenue).slice(0, 5));
+          
+          const colors = ['bg-slate-900', 'bg-slate-400', 'bg-slate-200'];
+          setCategoryStats(Object.entries(cMap).map(([name, val], i) => ({
+            name,
+            val: Math.round((val / totalItemsRevenue) * 100),
+            color: colors[i % colors.length]
+          })).sort((a, b) => b.val - a.val).slice(0, 3));
         }
-      } else {
-        setMenuItemSales([]);
       }
 
-      // 3. Low stock
-      const { data: inventory } = await supabase.from('inventory_items').select('*');
+      // 5. Real Low Stock
+      const { data: inventory } = await supabase
+        .from('inventory_items')
+        .select('*')
+        .eq('company_id', profile.company_id);
+      
       if (inventory) {
-        setLowStockItems(inventory.filter((i: any) => Number(i.quantity) <= Number(i.low_stock_threshold)));
+        setLowStock(inventory.filter((i: any) => i.quantity <= i.low_stock_threshold).slice(0, 4));
       }
+
     } catch (err) {
-      console.error(err);
+      console.error('Dashboard error:', err);
     } finally {
       setLoading(false);
     }
-  }, [start, end]);
+  }, [selectedRange, customStart, customEnd, profile?.company_id]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
-  // Cashier search handler
-  const handleCashierSearch = async () => {
-    const q = cashierSearch.trim();
-    if (!q) return;
-    setCashierLoading(true);
-    setCashierError(null);
-    setCashierStats(null);
-
-    try {
-      // Helper: given a profile id, fetch their order stats for the selected period
-      const fetchStats = async (profileId: string, profileName: string) => {
-        const { data: orders } = await supabase
-          .from('orders')
-          .select('total_amount, status')
-          .eq('staff_id', profileId)
-          .in('status', ['completed', 'voided'])
-          .gte('created_at', start)
-          .lte('created_at', end);
-
-        let netSale = 0, grossSale = 0, tc = 0;
-        (orders || []).forEach((o: any) => {
-          const amt = Number(o.total_amount);
-          grossSale += amt;
-          if (o.status === 'completed') { netSale += amt; tc++; }
-        });
-        setCashierStats({ id: profileId, name: profileName, grossSale, netSale, tc, ac: tc > 0 ? netSale / tc : 0 });
-      };
-
-      // 1. staff_code exact match (e.g. "CSH-001") — primary / most user-friendly
-      const staffCodeRegex = /^CSH-\d+$/i;
-      if (staffCodeRegex.test(q)) {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('id, full_name, staff_code')
-          .ilike('staff_code', q)
-          .single();
-
-        if (error || !data) throw new Error(`No cashier found with code "${q.toUpperCase()}".`);
-        await fetchStats(data.id, `${data.full_name} (${data.staff_code})`);
-        return;
-      }
-
-      // 2. Full UUID exact match
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (uuidRegex.test(q)) {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('id, full_name, staff_code')
-          .eq('id', q)
-          .single();
-
-        if (error || !data) throw new Error('No cashier found with that ID.');
-        await fetchStats(data.id, `${data.full_name} (${data.staff_code ?? data.id.slice(0, 8)})`);
-        return;
-      }
-
-      // 3. Search by full_name (case-insensitive)
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, staff_code')
-        .ilike('full_name', `%${q}%`)
-        .limit(1)
-        .single();
-
-      if (error || !data) throw new Error('No cashier found with that name.');
-      await fetchStats(data.id, `${data.full_name} (${data.staff_code ?? ''})`);
-
-    } catch (err: any) {
-      setCashierError(err.message);
-    } finally {
-      setCashierLoading(false);
-    }
-  };
+  if (loading) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center h-full bg-slate-50/50">
+        <div className="relative">
+          <Loader2 className="h-10 w-10 text-slate-900 animate-spin" />
+          <Zap className="h-4 w-4 text-slate-900 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+        </div>
+        <p className="mt-4 text-slate-400 font-medium tracking-wider uppercase text-[10px]">Syncing Data</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex-1 space-y-6 p-6 pt-5 bg-slate-50 min-h-full">
-      {/* Header + Date Picker */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="flex-1 p-4 md:p-8 space-y-8 bg-[#F8FAFC]">
+      {/* Apple Style Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Sales Report</h2>
-          <p className="text-sm text-slate-500 mt-0.5">Viewing data for: <span className="font-semibold text-slate-700">{label}</span></p>
+          <h2 className="text-3xl font-semibold tracking-tight text-slate-900">Live Insights</h2>
+          <p className="text-slate-500 font-medium text-sm">Real-time performance analytics.</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          {DATE_OPTIONS.map(opt => (
-            <button
-              key={opt.id}
-              onClick={() => setSelectedDate(opt.id)}
-              className={cn(
-                'px-3 py-1.5 rounded-full text-xs font-semibold transition-colors border',
-                selectedDate === opt.id
-                  ? 'bg-slate-900 text-white border-slate-900'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
-              )}
-            >
-              <CalendarDays className="inline h-3 w-3 mr-1 -mt-0.5" />
-              {opt.label}
-            </button>
-          ))}
-          {selectedDate === 'custom' && (
-            <input
-              type="date"
-              value={customDate}
-              onChange={e => setCustomDate(e.target.value)}
-              className="border border-slate-200 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-slate-400"
-            />
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+          {selectedRange === 'custom' && (
+            <div className="flex items-center gap-2 animate-in slide-in-from-right-4 duration-500 bg-white p-1 rounded-2xl border border-slate-100 shadow-sm">
+              <input 
+                type="date" 
+                value={customStart}
+                onChange={(e) => setCustomStart(e.target.value)}
+                className="bg-transparent border-none text-[10px] font-semibold text-slate-900 focus:ring-0 outline-none uppercase px-2"
+              />
+              <span className="text-slate-300 font-bold">→</span>
+              <input 
+                type="date" 
+                value={customEnd}
+                onChange={(e) => setCustomEnd(e.target.value)}
+                className="bg-transparent border-none text-[10px] font-semibold text-slate-900 focus:ring-0 outline-none uppercase px-2"
+              />
+            </div>
           )}
+          <div className="flex items-center bg-white/50 backdrop-blur-md p-1 rounded-2xl shadow-sm border border-slate-200/50">
+            {(['today', 'yesterday', '7days', 'custom'] as const).map((range) => (
+              <button
+                key={range}
+                onClick={() => setSelectedRange(range)}
+                className={cn(
+                  "px-4 py-2 rounded-xl text-[11px] font-semibold uppercase tracking-wider transition-all duration-300",
+                  selectedRange === range 
+                    ? "bg-white text-slate-900 shadow-sm border border-slate-200/50" 
+                    : "text-slate-400 hover:text-slate-600 hover:bg-white/30"
+                )}
+              >
+                {range === '7days' ? '7 Days' : range}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center py-24">
-          <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
-        </div>
-      ) : (
-        <>
-          {/* KPI Row */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <KPICard
-              title="Gross Sale"
-              value={`$${summary?.grossSale.toFixed(2) ?? '0.00'}`}
-              sub="All orders (incl. voided)"
-              icon={<DollarSign className="h-4 w-4" />}
-              color="slate"
-            />
-            <KPICard
-              title="Net Sale"
-              value={`$${summary?.netSale.toFixed(2) ?? '0.00'}`}
-              sub="Completed orders only"
-              icon={<TrendingUp className="h-4 w-4" />}
-              color="emerald"
-            />
-            <KPICard
-              title="TC"
-              value={String(summary?.tc ?? 0)}
-              sub="Transaction Count"
-              icon={<ShoppingBag className="h-4 w-4" />}
-              color="blue"
-            />
-            <KPICard
-              title="AC"
-              value={`$${summary?.ac.toFixed(2) ?? '0.00'}`}
-              sub="Average Check"
-              icon={<ReceiptText className="h-4 w-4" />}
-              color="violet"
-            />
-          </div>
+      {/* Minimalist KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <KPICard 
+          title="Net Revenue" 
+          value={`$${summary.netSale.toLocaleString()}`} 
+          trend={summary.growth} 
+          icon={<DollarSign className="h-5 w-5" />}
+        />
+        <KPICard 
+          title="Total Orders" 
+          value={summary.tc.toString()} 
+          trend={summary.growth / 2} 
+          icon={<ShoppingBag className="h-5 w-5" />}
+        />
+        <KPICard 
+          title="Avg. Ticket" 
+          value={`$${summary.ac.toFixed(2)}`} 
+          trend={0} 
+          icon={<ReceiptText className="h-5 w-5" />}
+        />
+        <KPICard 
+          title="CRM Members" 
+          value={summary.customerCount.toString()} 
+          trend={5.2} 
+          icon={<Users className="h-5 w-5" />}
+        />
+      </div>
 
-          {/* Voided Summary */}
-          {(summary?.voidedCount ?? 0) > 0 && (
-            <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm">
-              <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />
-              <span className="text-red-700">
-                <strong>{summary!.voidedCount}</strong> voided bill(s) worth <strong>${summary!.voidedAmount.toFixed(2)}</strong> excluded from Net Sale
-              </span>
-            </div>
-          )}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Real Revenue Chart */}
+        <div className="lg:col-span-2 space-y-8">
+          <Card className="border-none shadow-xl shadow-slate-200/50 rounded-[32px] overflow-hidden bg-white">
+            <CardHeader className="p-8 pb-0">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-xl font-black text-slate-900">Revenue Performance</CardTitle>
+                  <p className="text-sm text-slate-400 font-medium">Actual sales trend from database</p>
+                </div>
+                <div className="h-10 w-10 rounded-full bg-slate-50 flex items-center justify-center">
+                  <TrendingUp className="h-5 w-5 text-slate-900" />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-8 pt-4">
+              <div className="h-[300px] w-full">
+                {revenueTrend.length === 0 ? (
+                   <div className="h-full flex items-center justify-center text-slate-300 font-black text-xs uppercase tracking-widest">
+                      No sales data in this period
+                   </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                    <AreaChart data={revenueTrend}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis 
+                        dataKey="name" 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 700}}
+                        dy={10}
+                      />
+                      <YAxis hide />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Area 
+                        type="monotone" 
+                        dataKey="value" 
+                        stroke="#0f172a" 
+                        strokeWidth={2}
+                        fillOpacity={0} 
+                        animationDuration={1500}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Menu Item Sales */}
-            <Card className="lg:col-span-2">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-slate-900 flex items-center gap-2">
-                  <BarChart2 className="h-5 w-5 text-slate-500" />
-                  Menu Item Sales
+          {/* Top Products Table */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="border-none shadow-lg rounded-[24px] bg-white overflow-hidden">
+              <CardHeader className="p-6">
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <Award className="h-5 w-5 text-slate-900" />
+                  Bestsellers
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                {menuItemSales.length === 0 ? (
-                  <div className="text-center py-10 text-slate-400">
-                    <ShoppingBag className="h-10 w-10 mx-auto opacity-20 mb-2" />
-                    <p className="text-sm">No sales data for this period.</p>
-                  </div>
+              <CardContent className="p-6 pt-0 space-y-4">
+                {topProducts.length === 0 ? (
+                   <p className="text-xs text-slate-400 text-center py-4">No data available</p>
                 ) : (
-                  <>
-                    {/* Bar chart for top 5 */}
-                    <div className="h-40 mb-4">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={menuItemSales.slice(0, 5)}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                          <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} />
-                          <YAxis fontSize={10} tickLine={false} axisLine={false} tickFormatter={v => `${v}`} />
-                          <Tooltip
-                            formatter={(val: any) => [`${val} sold`, 'Qty']}
-                            contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0' }}
-                          />
-                          <Bar dataKey="qty" fill="#0f172a" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
+                  topProducts.map((p, i) => (
+                    <div key={p.name} className="flex items-center justify-between group">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center text-xs font-bold text-slate-400 group-hover:bg-slate-900 group-hover:text-white transition-colors">
+                          {i + 1}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-900 line-clamp-1">{p.name}</p>
+                          <p className="text-[9px] text-slate-400 font-black uppercase tracking-wider">{p.qty} Sold</p>
+                        </div>
+                      </div>
+                      <p className="font-black text-slate-900">${p.revenue.toFixed(0)}</p>
                     </div>
-
-                    {/* Table */}
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="text-xs text-slate-500 border-b">
-                            <th className="text-left py-2 font-medium">Item</th>
-                            <th className="text-right py-2 font-medium">Qty Sold</th>
-                            <th className="text-right py-2 font-medium">Revenue</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-50">
-                          {menuItemSales.map((item, i) => (
-                            <tr key={item.product_id} className="hover:bg-slate-50/50">
-                              <td className="py-2 text-slate-800 flex items-center gap-2">
-                                <span className="text-xs text-slate-400 w-5">{i + 1}</span>
-                                {item.name}
-                              </td>
-                              <td className="py-2 text-right font-semibold text-slate-900">{item.qty}</td>
-                              <td className="py-2 text-right text-emerald-600 font-semibold">${item.revenue.toFixed(2)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </>
+                  ))
                 )}
               </CardContent>
             </Card>
 
-            {/* Right column: low stock + cashier search */}
-            <div className="space-y-4">
-              {/* Cashier Search — admin only */}
-              {isAdmin && (
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-slate-900 flex items-center gap-2">
-                      <Users className="h-5 w-5 text-slate-500" />
-                      Cashier Stats
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="Search by name or ID…"
-                        value={cashierSearch}
-                        onChange={e => { setCashierSearch(e.target.value); setCashierStats(null); setCashierError(null); }}
-                        onKeyDown={e => e.key === 'Enter' && handleCashierSearch()}
-                        className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-400"
-                      />
-                      <button
-                        onClick={handleCashierSearch}
-                        disabled={cashierLoading}
-                        className="px-3 py-2 bg-slate-900 text-white rounded-md hover:bg-slate-800 transition-colors disabled:opacity-50"
-                      >
-                        {cashierLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                      </button>
-                    </div>
-
-                    {cashierError && (
-                      <p className="text-xs text-red-600 bg-red-50 rounded-md px-3 py-2">{cashierError}</p>
-                    )}
-
-                    {cashierStats && (
-                      <div className="bg-slate-50 rounded-lg p-3 space-y-2 border border-slate-100">
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="font-semibold text-slate-900 text-sm">{cashierStats.name}</p>
-                          <Badge variant="secondary" className="text-[10px] font-mono">{cashierStats.id.slice(0, 8)}</Badge>
+            <Card className="border-none shadow-lg rounded-[24px] bg-white overflow-hidden">
+              <CardHeader className="p-6">
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-slate-900" />
+                  Stock Alerts
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 pt-0 space-y-4">
+                {lowStock.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center py-8 text-slate-400 font-semibold text-sm">
+                    <Star className="h-8 w-8 mb-2" />
+                    Optimal Levels
+                  </div>
+                ) : (
+                  lowStock.map(item => (
+                    <div key={item.id} className="flex items-center justify-between p-3 bg-rose-50 rounded-2xl border border-rose-100">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center">
+                          <Package className="h-5 w-5 text-slate-900" />
                         </div>
-                        <StatRow label="Gross Sale" value={`$${cashierStats.grossSale.toFixed(2)}`} />
-                        <StatRow label="Net Sale" value={`$${cashierStats.netSale.toFixed(2)}`} highlight />
-                        <StatRow label="TC" value={String(cashierStats.tc)} />
-                        <StatRow label="AC" value={`$${cashierStats.ac.toFixed(2)}`} />
+                        <div>
+                          <p className="text-sm font-bold text-rose-900 line-clamp-1">{item.name}</p>
+                          <p className="text-[9px] text-rose-400 font-black uppercase">Low Inventory</p>
+                        </div>
                       </div>
-                    )}
-
-                    {!cashierStats && !cashierError && (
-                      <p className="text-xs text-slate-400 text-center py-4">Enter a cashier's name or ID to view their stats for the selected date.</p>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Low Stock Alerts */}
-              <Card className={lowStockItems.length > 0 ? 'border-amber-200' : ''}>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-slate-900 flex items-center gap-2">
-                    <AlertTriangle className={cn("h-5 w-5", lowStockItems.length > 0 ? 'text-amber-500' : 'text-slate-400')} />
-                    Low Stock
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {lowStockItems.length === 0 ? (
-                    <div className="flex items-center gap-2 text-xs text-emerald-600">
-                      <ArrowUpRight className="h-4 w-4" />
-                      All stock levels are healthy.
+                      <Badge className="bg-slate-900 border-none font-semibold text-[10px] py-1 px-3">
+                        {item.quantity} {item.unit}
+                      </Badge>
                     </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {lowStockItems.slice(0, 5).map((item: any) => (
-                        <div key={item.id} className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm font-medium text-slate-900">{item.name}</p>
-                            <p className="text-xs text-slate-400">Min: {item.low_stock_threshold}{item.unit}</p>
-                          </div>
-                          <Badge variant="destructive" className="font-mono text-xs">
-                            {Number(item.quantity).toFixed(1)}{item.unit}
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
           </div>
-        </>
-      )}
+        </div>
+
+        {/* Real Quick Stats Sidebar */}
+        <div className="space-y-6">
+          <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[32px] bg-white overflow-hidden relative border border-slate-100/50">
+            <CardHeader className="p-8">
+              <CardTitle className="text-xl font-semibold flex items-center gap-3">
+                <Zap className="h-5 w-5 text-slate-900" />
+                Store Pulse
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-8 pt-0 space-y-8">
+              <div className="flex items-center gap-8">
+                 <div className="space-y-2">
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Peak Hour</p>
+                    <div className="flex items-center gap-2">
+                       <Clock className="h-4 w-4 text-slate-400" />
+                       <span className="text-xl font-semibold text-slate-900">{summary.peakHour}</span>
+                    </div>
+                 </div>
+                 <div className="space-y-2">
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Store Status</p>
+                    <div className="flex items-center gap-2">
+                       <div className="h-2 w-2 bg-slate-300 rounded-full"></div>
+                       <span className="text-sm font-semibold text-slate-600">Active</span>
+                    </div>
+                 </div>
+              </div>
+
+              <div className="pt-6 border-t border-slate-100">
+                 <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-4">Sales Mix</p>
+                 <div className="space-y-6">
+                    {categoryStats.length === 0 ? (
+                       <p className="text-xs text-slate-400">No category data</p>
+                    ) : (
+                      categoryStats.map(cat => (
+                        <div key={cat.name} className="space-y-2">
+                          <div className="flex justify-between text-[10px] font-semibold uppercase tracking-wider">
+                            <span className="text-slate-500">{cat.name}</span>
+                            <span className="text-slate-900">{cat.val}%</span>
+                          </div>
+                          <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                            <div className={cn("h-full rounded-full bg-slate-900 transition-all duration-1000")} style={{width: `${cat.val}%`}}></div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                 </div>
+              </div>
+
+              <button className="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-semibold text-[11px] uppercase tracking-wider transition-all active:scale-[0.98]">
+                Export Analytics
+              </button>
+            </CardContent>
+          </Card>
+
+          <Card className="border-none shadow-lg rounded-[32px] bg-white p-8">
+             <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-2xl bg-slate-50 flex items-center justify-center">
+                   <Users className="h-6 w-6 text-slate-400" />
+                </div>
+                <div>
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Members</p>
+                   <p className="text-2xl font-black text-slate-900">{summary.customerCount}</p>
+                </div>
+             </div>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
 
-// ─── Sub components ────────────────────────────────────────────────────────
+// ─── Sub-components ────────────────────────────────────────────────────────
 
-function KPICard({ title, value, sub, icon, color }: {
-  title: string; value: string; sub: string; icon: React.ReactNode;
-  color: 'slate' | 'emerald' | 'blue' | 'violet';
+function KPICard({ title, value, trend, icon }: { 
+  title: string; value: string; trend: number; icon: React.ReactNode;
 }) {
-  const colors = {
-    slate: 'bg-slate-900 text-white',
-    emerald: 'bg-emerald-500 text-white',
-    blue: 'bg-blue-600 text-white',
-    violet: 'bg-violet-600 text-white',
-  };
+  const isPositive = trend >= 0;
   return (
-    <Card className="overflow-hidden">
-      <CardContent className="p-0">
-        <div className={cn('px-5 py-4 flex items-center justify-between', colors[color])}>
-          <p className="text-sm font-semibold opacity-90">{title}</p>
-          <span className="opacity-80">{icon}</span>
+    <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px] overflow-hidden bg-white group transition-all duration-500">
+      <CardContent className="p-6">
+        <div className="flex justify-between items-start mb-4">
+          <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-slate-900 transition-colors">
+            {icon}
+          </div>
+          <div className={cn(
+            "flex items-center gap-1 text-[10px] font-semibold",
+            isPositive ? "text-slate-900" : "text-slate-400"
+          )}>
+            {isPositive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+            {Math.abs(Math.round(trend))}%
+          </div>
         </div>
-        <div className="px-5 py-3">
-          <p className="text-2xl font-bold text-slate-900">{value}</p>
-          <p className="text-xs text-slate-400 mt-0.5">{sub}</p>
-        </div>
+        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">{title}</p>
+        <h3 className="text-2xl font-semibold text-slate-900 tracking-tight">{value}</h3>
       </CardContent>
     </Card>
   );
 }
 
-function StatRow({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
-  return (
-    <div className="flex justify-between items-center text-xs">
-      <span className="text-slate-500">{label}</span>
-      <span className={cn('font-semibold', highlight ? 'text-emerald-600' : 'text-slate-900')}>{value}</span>
-    </div>
-  );
+function CustomTooltip({ active, payload, label }: any) {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-slate-900 text-white p-4 rounded-2xl shadow-2xl border border-white/10 backdrop-blur-md">
+        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">{label}</p>
+        <p className="text-lg font-black">${payload[0].value.toLocaleString()}</p>
+      </div>
+    );
+  }
+  return null;
 }

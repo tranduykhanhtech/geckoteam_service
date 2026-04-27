@@ -52,80 +52,92 @@ export function VoidBillForm({ voidOrder }: VoidBillFormProps) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-8">
       {msg && (
         <div className={cn(
-          'text-sm px-4 py-3 rounded-md flex items-start gap-2',
-          msg.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'
+          'text-[10px] font-semibold uppercase tracking-wider px-6 py-4 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300 shadow-sm border',
+          msg.type === 'success' 
+            ? 'bg-white text-slate-900 border-slate-100' 
+            : 'bg-rose-50 text-rose-600 border-rose-100'
         )}>
-          {msg.type === 'success' ? <CheckCircle2 className="h-5 w-5 mt-0.5 shrink-0" /> : <AlertTriangle className="h-5 w-5 mt-0.5 shrink-0" />}
+          {msg.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertTriangle className="h-4 w-4 shrink-0" />}
           {msg.text}
         </div>
       )}
 
-      <div>
-        <label className="block text-sm font-semibold text-slate-700 mb-2">Search Order by ID</label>
-        <div className="flex gap-2">
+      <div className="space-y-4">
+        <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider pl-1">Search Order by ID</label>
+        <div className="flex gap-3">
           <input
             type="text"
-            placeholder="e.g. 123e4567-e89b-12d3-a456-426614174000"
+            placeholder="e.g. 123e4567-..."
             value={orderId}
             onChange={e => { setOrderId(e.target.value); setOrderPreview(null); setMsg(null); }}
-            className="flex-1 px-4 py-2 text-base border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400 font-mono"
+            className="flex-1 px-4 h-12 bg-slate-50 border border-transparent rounded-xl focus:bg-white focus:border-slate-900 outline-none transition-all font-semibold text-slate-900 text-sm font-mono"
           />
           <button
             onClick={handleSearch}
             disabled={searching || !orderId.trim()}
-            className="px-6 py-2 bg-slate-900 text-white hover:bg-slate-800 rounded-md transition-colors disabled:opacity-50 flex items-center font-medium"
+            className="px-8 h-12 bg-slate-900 text-white rounded-xl text-xs font-semibold uppercase tracking-wider transition-all disabled:opacity-50 flex items-center gap-2"
           >
-            {searching ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Search className="h-5 w-5 mr-2" />}
+            {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
             Find
           </button>
         </div>
       </div>
 
       {orderPreview && (
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 mt-6">
-          <h4 className="font-bold text-slate-900 mb-4 pb-4 border-b border-slate-200">Order Details</h4>
+        <div className="bg-white border border-slate-100 rounded-3xl p-8 shadow-sm animate-in fade-in zoom-in-95 duration-500">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-900">
+              <Ban className="h-5 w-5" />
+            </div>
+            <div>
+              <h4 className="font-semibold text-slate-900 text-lg tracking-tight">Order Details</h4>
+              <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Verification for override</p>
+            </div>
+          </div>
           
-          <div className="space-y-3">
-            <div className="flex justify-between text-sm">
-              <span className="text-slate-500">Order ID</span>
-              <span className="font-mono text-slate-900 font-medium">{orderPreview.id}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-slate-500">Total Amount</span>
-              <span className="font-bold text-slate-900 text-lg">${Number(orderPreview.total_amount).toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-slate-500">Current Status</span>
-              <span className={cn('font-semibold capitalize px-2 py-0.5 rounded-full text-xs', 
-                orderPreview.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'
-              )}>
-                {orderPreview.status}
-              </span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-slate-500">Date Created</span>
-              <span className="font-medium text-slate-900">{new Date(orderPreview.created_at).toLocaleString()}</span>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-1">
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Order ID</p>
+                <p className="text-xs font-mono text-slate-900 font-medium truncate">{orderPreview.id}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Total Amount</p>
+                <p className="text-2xl font-semibold text-slate-900 tracking-tight">${Number(orderPreview.total_amount).toLocaleString()}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Current Status</p>
+                <span className={cn('inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-semibold uppercase tracking-wider', 
+                  orderPreview.status === 'cancelled' ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-600'
+                )}>
+                  {orderPreview.status}
+                </span>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Timestamp</p>
+                <p className="text-xs font-medium text-slate-500">{new Date(orderPreview.created_at).toLocaleString()}</p>
+              </div>
             </div>
           </div>
 
-          <div className="mt-6 pt-6 border-t border-slate-200">
+          <div className="mt-10 pt-8 border-t border-slate-50">
             {orderPreview.status === 'cancelled' ? (
-              <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm font-medium flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5" />
-                This order has already been voided/cancelled.
+              <div className="bg-rose-50 text-rose-600 p-4 rounded-2xl text-[10px] font-semibold uppercase tracking-wider flex items-center justify-center gap-3">
+                <AlertTriangle className="h-4 w-4" />
+                This record is already voided
               </div>
             ) : (
-              <Button
+              <button
                 onClick={handleVoid}
                 disabled={loading}
-                className="w-full bg-red-600 hover:bg-red-700 text-white h-12 text-base font-bold"
+                className="w-full bg-rose-600 hover:bg-rose-700 text-white h-12 rounded-xl text-xs font-semibold uppercase tracking-widest transition-all active:scale-[0.98] flex items-center justify-center gap-2"
               >
-                {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Ban className="h-5 w-5 mr-2" />}
-                Confirm Void Order
-              </Button>
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ban className="h-4 w-4" />}
+                Confirm Order Override
+              </button>
             )}
           </div>
         </div>

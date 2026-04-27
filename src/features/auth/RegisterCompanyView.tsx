@@ -78,8 +78,8 @@ export function RegisterCompanyView() {
         <h2 className="mt-6 text-center text-3xl font-extrabold text-slate-900">
           Start your free trial
         </h2>
-        <p className="mt-2 text-center text-sm text-slate-600">
-          Or <Link to="/login" className="font-medium text-emerald-600 hover:text-emerald-500">sign in to your existing account</Link>
+        <p className="mt-2 text-center text-sm text-slate-500 font-medium">
+          Or <Link to="/login" className="font-semibold text-slate-900 hover:underline decoration-slate-200">sign in to your existing account</Link>
         </p>
       </div>
 
@@ -92,7 +92,7 @@ export function RegisterCompanyView() {
               </div>
             )}
             {success && (
-              <div className="bg-emerald-50 border border-emerald-200 text-emerald-600 px-4 py-3 rounded-md text-sm">
+              <div className="bg-slate-900 text-white px-4 py-3 rounded-xl text-sm font-semibold shadow-xl shadow-slate-900/10 animate-in fade-in slide-in-from-top-2">
                 {success}
               </div>
             )}
@@ -106,7 +106,7 @@ export function RegisterCompanyView() {
                 <input
                   required
                   type="text"
-                  className="focus:ring-emerald-500 focus:border-emerald-500 block w-full pl-10 sm:text-sm border-slate-300 rounded-md py-2 border outline-none"
+                  className="focus:ring-1 focus:ring-slate-900 focus:border-slate-900 block w-full pl-10 sm:text-sm border-slate-200 rounded-xl py-2.5 border outline-none transition-all"
                   placeholder="The Coffee House"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
@@ -123,7 +123,7 @@ export function RegisterCompanyView() {
                 <input
                   required
                   type="text"
-                  className="focus:ring-emerald-500 focus:border-emerald-500 block w-full pl-10 sm:text-sm border-slate-300 rounded-md py-2 border outline-none"
+                  className="focus:ring-1 focus:ring-slate-900 focus:border-slate-900 block w-full pl-10 sm:text-sm border-slate-200 rounded-xl py-2.5 border outline-none transition-all"
                   placeholder="John Doe"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
@@ -140,7 +140,7 @@ export function RegisterCompanyView() {
                 <input
                   required
                   type="email"
-                  className="focus:ring-emerald-500 focus:border-emerald-500 block w-full pl-10 sm:text-sm border-slate-300 rounded-md py-2 border outline-none"
+                  className="focus:ring-1 focus:ring-slate-900 focus:border-slate-900 block w-full pl-10 sm:text-sm border-slate-200 rounded-xl py-2.5 border outline-none transition-all"
                   placeholder="admin@coffeehouse.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -158,7 +158,7 @@ export function RegisterCompanyView() {
                   required
                   type="password"
                   minLength={6}
-                  className="focus:ring-emerald-500 focus:border-emerald-500 block w-full pl-10 sm:text-sm border-slate-300 rounded-md py-2 border outline-none"
+                  className="focus:ring-1 focus:ring-slate-900 focus:border-slate-900 block w-full pl-10 sm:text-sm border-slate-200 rounded-xl py-2.5 border outline-none transition-all"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -169,7 +169,7 @@ export function RegisterCompanyView() {
             <div>
               <Button 
                 type="submit" 
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5"
+                className="w-full bg-slate-900 hover:bg-slate-800 text-white py-6 rounded-xl text-sm font-semibold transition-all active:scale-[0.98]"
                 disabled={loading}
               >
                 {loading ? (
