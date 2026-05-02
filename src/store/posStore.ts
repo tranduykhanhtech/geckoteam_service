@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from './authStore';
+import { useShiftStore } from './shiftStore';
 
 export interface Category {
   id: string;
@@ -206,7 +207,10 @@ export const usePOSStore = create<POSState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const profile = useAuthStore.getState().profile;
+      const { currentShift } = useShiftStore.getState();
+      
       if (!profile) throw new Error("User not authenticated or missing profile");
+      if (!currentShift) throw new Error("No active shift. Please open a shift first.");
 
       const generateOrderCode = () => {
         const datePart = new Date().toISOString().slice(2, 10).replace(/-/g, ''); // YYMMDD
@@ -232,7 +236,8 @@ export const usePOSStore = create<POSState>((set, get) => ({
           subtotal: subtotal,
           loyalty_discount: loyaltyDiscount,
           total_amount: totalAmount,
-          status: 'completed'
+          status: 'completed',
+          shift_id: currentShift.id
         }]);
 
       if (orderError) throw orderError;

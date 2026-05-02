@@ -9,6 +9,7 @@ import { useInventoryStore } from '../../store/inventoryStore';
 import { NewItemModal } from './NewItemModal';
 import { AdjustmentHistoryModal } from './AdjustmentHistoryModal';
 import { TransferView } from './TransferView';
+import { ProcurementView } from '../procurement/ProcurementView';
 
 export function InventoryView() {
   const { items, isLoading, fetchItems, fetchCategories } = useInventoryStore();
@@ -16,6 +17,7 @@ export function InventoryView() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
+  const [isProcurementOpen, setIsProcurementOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
 
   useEffect(() => { 
@@ -152,6 +154,14 @@ export function InventoryView() {
           </button>
 
           <button 
+            className="apple-btn-secondary h-11 px-6 text-sm flex items-center gap-2"
+            onClick={() => setIsProcurementOpen(true)}
+          >
+            <FileDown className="h-4 w-4" />
+            Purchasing
+          </button>
+
+          <button 
             onClick={() => setIsModalOpen(true)}
             className="apple-btn-primary h-11 px-6 text-sm uppercase tracking-wider flex items-center gap-2"
           >
@@ -205,6 +215,7 @@ export function InventoryView() {
       />
       <AdjustmentHistoryModal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} />
       <TransferView isOpen={isTransferOpen} onClose={() => setIsTransferOpen(false)} />
+      <ProcurementView isOpen={isProcurementOpen} onClose={() => setIsProcurementOpen(false)} />
     </div>
   );
 }

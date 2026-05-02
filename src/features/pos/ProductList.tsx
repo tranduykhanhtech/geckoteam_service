@@ -12,7 +12,7 @@ const getCategoryIcon = (category: string, className?: string) => {
   return <Utensils className={defaultClass} />;
 };
 
-export function ProductList() {
+export function ProductList({ onOpenCloseShift }: { onOpenCloseShift?: () => void }) {
   const {
     products,
     categories,
@@ -41,20 +41,40 @@ export function ProductList() {
       {/* Apple Style Header */}
       <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200/50 z-30 sticky top-0 px-6 py-5 space-y-5">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-semibold text-slate-900 tracking-tight">Menu</h2>
-            <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">{filteredProducts.length} items available</p>
+          <div className="flex items-center justify-between md:justify-start gap-4">
+            <div>
+              <h2 className="text-2xl font-semibold text-slate-900 tracking-tight">Menu</h2>
+              <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">{filteredProducts.length} items available</p>
+            </div>
+            {onOpenCloseShift && (
+              <button 
+                onClick={onOpenCloseShift}
+                className="md:hidden text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900 border border-slate-200 px-3 py-1.5 rounded-lg"
+              >
+                End Shift
+              </button>
+            )}
           </div>
 
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <input 
-              type="text"
-              placeholder="Search..."
-              className="w-full pl-11 pr-4 h-11 bg-slate-100 border-transparent focus:bg-white focus:ring-2 focus:ring-slate-200 rounded-2xl outline-none transition-all font-medium text-slate-900 text-sm"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+          <div className="relative flex-1 max-w-md flex items-center gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input 
+                type="text"
+                placeholder="Search..."
+                className="w-full pl-11 pr-4 h-11 bg-slate-100 border-transparent focus:bg-white focus:ring-2 focus:ring-slate-200 rounded-2xl outline-none transition-all font-medium text-slate-900 text-sm"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            {onOpenCloseShift && (
+              <button 
+                onClick={onOpenCloseShift}
+                className="hidden md:flex shrink-0 h-11 px-4 items-center gap-2 bg-slate-50 hover:bg-rose-50 text-slate-600 hover:text-rose-600 rounded-2xl text-[11px] font-bold uppercase tracking-widest transition-all border border-slate-100"
+              >
+                End Shift
+              </button>
+            )}
           </div>
         </div>
 

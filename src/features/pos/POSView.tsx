@@ -3,20 +3,32 @@ import { ProductList } from './ProductList';
 import { Cart } from './Cart';
 import { ShoppingCart, ArrowLeft } from 'lucide-react';
 import { usePOSStore } from '../../store/posStore';
+import { useShiftStore } from '../../store/shiftStore';
+import { OpenShiftOverlay, CloseShiftModal } from './ShiftManagement';
 import { cn } from '../../lib/utils';
+import { useEffect } from 'react';
 
 export function POSView() {
   const [activeView, setActiveView] = useState<'products' | 'cart'>('products');
+  const [isCloseShiftOpen, setIsCloseShiftOpen] = useState(false);
   const { cart } = usePOSStore();
+  const { currentShift, fetchCurrentShift, isLoading: isShiftLoading } = useShiftStore();
+
+  useEffect(() => {
+    fetchCurrentShift();
+  }, [fetchCurrentShift]);
 
   return (
     <div className="flex-1 flex overflow-hidden h-full bg-slate-50 relative">
+      {!isShiftLoading && !currentShift && <OpenShiftOverlay />}
+      {isCloseShiftOpen && <CloseShiftModal onClose={() => setIsCloseShiftOpen(false)} />}
+      
       {/* Products Area */}
       <div className={cn(
         "flex-1 flex flex-col h-full",
         activeView === 'cart' ? "hidden md:flex" : "flex"
       )}>
-        <ProductList />
+        <ProductList onOpenCloseShift={() => setIsCloseShiftOpen(true)} />
       </div>
 
       {/* Cart Area */}
